@@ -1,0 +1,269 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+enum UserRanks {
+    user
+    ambassador
+}
+
+model User {
+    id                     String         @id @default(uuid())
+    fullName               String
+    username               String?
+    languageCode           String?
+    description            String?
+    hashedRefreshToken     String?
+    isActive               Boolean        @default(true)
+    telegramUser           TelegramUser?
+    createdAt              DateTime       @default(now())
+    updatedAt              DateTime       @updatedAt
+    country                Country?       @relation(fields: [countryId], references: [id])
+    countryId              Int?
+    activities             Activity[]
+    events                 Event[]        @relation("CreatedEvents")
+    wallet                 Wallet?
+    avatarImage            Image?         @relation(fields: [avatarImageId], references: [id])
+    avatarImageId          String?
+    inviterUser            Invite[]       @relation(name: "InviterUser")
+    inviteeUser            Invite?        @relation(name: "InviteeUser")
+    availableInvites       Int            @default(3)
+    totalInvites           Int            @default(3)
+    totalReferralPoints    Float          @default(0.0) @map("total_referral_points")
+    experience             Int            @default(0)
+    experiences            Experience[]
+    rank                   UserRanks      @default(user)
+    showActivityToOthers   Boolean        @default(true) @map("show_activity_to_others")
+    showSoulPointsToOthers Boolean        @default(true) @map("show_soul_points_to_others")
+    farmingRate            Int            @default(1)
+    farmingTime            Int            @default(28800000)
+    farmingSession         Farming?
+    notifications          Notification[]
+}
+
+model TelegramUser {
+    telegramId   String   @id @unique
+    fullName     String
+    username     String?
+    isBot        Boolean  @default(false)
+    languageCode String?
+    user         User?    @relation(fields: [userId], references: [id])
+    userId       String?  @unique
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    countryId    Int?
+}
+
+model Image {
+    id         String   @id @default(uuid())
+    name       String
+    data       String // Base64-кодированное изображение
+    mimeType   String // Тип MIME (например, 'image/jpeg')
+    size       Int // Размер файла в байтах
+    uploadedAt DateTime @default(now()) // Время загрузки
+    user       User[]
+    event      Event?
+}
+
+model Country {
+    id    Int    @id @default(autoincrement())
+    name  String @unique
+    code  String @unique
+    users User[] @relation
+}
+
+model Wallet {
+    id               String        @id @default(uuid())
+    isSystem         Boolean       @default(false)
+    balance          Float         @default(0.0)
+    createdAt        DateTime      @default(now()) @map("created_at")
+    updatedAt        DateTime      @updatedAt @map("updated_at")
+    user             User?         @relation(fields: [userId], references: [id])
+    userId           String?       @unique
+    event            Event?        @relation(fields: [eventId], references: [id])
+    eventId          String?       @unique
+    transactionsFrom Transaction[] @relation(name: "FromWallet")
+    transactionsTo   Transaction[] @relation(name: "ToWallet")
+}
+
+enum TransactionType {
+    WELCOME_BONUS // Приветственное вознаграждение по итогу анализа телеграм профиля пользователя
+    FARM_REWARD // Начисление баллов за фарминг  
+    REFERRAL_REWARD // Бонус за приглашение друга (10% от его потраченных баллов)  
+
+    TASK_REWARD // Вознаграждение за выполнение внутриигровых заданий  
+    FORUM_REWARD // Вознаграждение за активности на форуме (активно после добавления бота)  
+    BUST_FRIENDS_CHARGE // Списание за увеличение лимита инвайтов  
+
+    EVENT_FUND_DEPOSIT // Организатор пополняет бонусный фонд мероприятия  
+    EVENT_FUND_DISTRIBUTION // Распределение бонусного фонда между участниками  
+    EVENT_FUND_REFUND // Возврат бонусного фонда, если мероприятие отменено  
+    EVENT_CREATION_CHARGE // Списание за создание встречи  
+}
+
+enum TransactionStatus {
+    PENDING
+    COMPLETED
+    FAILED
+    CANCELLED
+}
+
+model Transaction {
+    id           String            @id @default(uuid())
+    amount       Float
+    type         TransactionType
+    status       TransactionStatus @default(PENDING)
+    description  String?
+    fromWalletId String
+    fromWallet   Wallet            @relation(name: "FromWallet", fields: [fromWalletId], references: [id])
+    toWalletId   String
+    toWallet     Wallet            @relation(name: "ToWallet", fields: [toWalletId], references: [id])
+    createdAt    DateTime          @default(now())
+    updatedAt    DateTime          @updatedAt
+}
+
+model Activity {
+    id             String    @id @default(uuid())
+    userId         String
+    eventId        String
+    joinedAt       DateTime  @default(now()) @map("joined_at")
+    user           User      @relation(fields: [userId], references: [id])
+    event          Event     @relation(fields: [eventId], references: [id])
+    rating         Int?
+    isConfirmed    Boolean   @default(false) @map("is_confirmed")
+    isConfirmedAt  DateTime? @map("is_confirmed_at")
+    receivedPoints Int?
+}
+
+enum EntryCondition {
+    FREE
+    DONATION
+    PAID
+}
+
+enum BonusDistributionEnum {
+    ALL
+    FIRST
+    FIRST_N
+}
+
+model Event {
+    id                    String                @id @default(uuid())
+    title                 String                @db.VarChar(255)
+    description           String?
+    imageId               String?               @unique @map("image_id")
+    image                 Image?                @relation(fields: [imageId], references: [id])
+    startDate             DateTime              @map("start_date")
+    finishDate            DateTime              @map("finish_date")
+    deposit               Int?
+    bonusDistributionType BonusDistributionEnum @default(ALL) @map("bonus_distribution_type")
+    bonusDistributionN    Int?                  @map("bonus_distribution_n")
+    guestLimit            Int?                  @map("guest_limit")
+    creatorId             String                @map("creator_id")
+    creator               User                  @relation("CreatedEvents", fields: [creatorId], references: [id])
+    createdAt             DateTime              @default(now()) @map("created_at")
+    updatedAt             DateTime              @updatedAt @map("updated_at")
+    activities            Activity[]
+    wallet                Wallet?
+    placeId               String
+    place                 Place                 @relation(fields: [placeId], references: [id])
+    averageRating         Float?
+    ratingDetails         Rating?               @relation("EventRating")
+    isArchived            Boolean               @default(false)
+    entryCondition        EntryCondition        @default(FREE) @map("entry_condition")
+    entryFee              Float?                @map("entry_fee")
+    currencyId            Int?
+    currency              Currency?             @relation(fields: [currencyId], references: [id])
+}
+
+model Rating {
+    id            String  @id @default(uuid())
+    eventId       String? @unique @map("event_id")
+    event         Event?  @relation("EventRating", fields: [eventId], references: [id])
+    votesForOne   Int     @default(0)
+    votesForTwo   Int     @default(0)
+    votesForThree Int     @default(0)
+    votesForFour  Int     @default(0)
+    votesForFive  Int     @default(0)
+}
+
+model Invite {
+    id                  String   @id @default(uuid())
+    inviterId           String
+    inviteeId           String   @unique
+    inviterUser         User     @relation("InviterUser", fields: [inviterId], references: [id])
+    inviteeUser         User?    @relation("InviteeUser", fields: [inviteeId], references: [id])
+    createdAt           DateTime @default(now()) @map("created_at")
+    updatedAt           DateTime @updatedAt @map("updated_at")
+    referralPointsGiven Float    @default(0.0) @map("referral_points_given")
+}
+
+model Place {
+    id          String   @id @default(uuid())
+    name        String
+    description String?
+    latitude    Float
+    longitude   Float
+    address     String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    events      Event[]
+}
+
+model Farming {
+    id         String   @id @default(uuid())
+    userId     String   @unique
+    user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    startDate  DateTime @map("start_date")
+    finishDate DateTime @map("finish_date")
+}
+
+model Currency {
+    id     Int     @id @default(autoincrement())
+    code   String  @unique
+    events Event[] @relation
+}
+
+model Notification {
+    id        String   @id @default(uuid())
+    title     String
+    data      Json
+    isRead    Boolean  @default(false)
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+enum ExperienceType {
+    MEETING_VISIT
+    MEETING_RATE
+    OWN_MEETING_PER_GUEST
+    OWN_MEETING_PER_RATING_1
+    OWN_MEETING_PER_RATING_2
+    OWN_MEETING_PER_RATING_3
+    OWN_MEETING_PER_RATING_4
+    OWN_MEETING_PER_RATING_5
+    FRIENDS_PER_INVITE
+    FARMING_PER_TIMER
+}
+
+model Experience {
+    id        String         @id @default(uuid())
+    createdAt DateTime       @default(now())
+    value     Int
+    userId    String
+    type      ExperienceType
+    user      User           @relation(fields: [userId], references: [id])
+}

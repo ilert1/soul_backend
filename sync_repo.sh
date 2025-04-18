@@ -4,8 +4,7 @@
 REPO_URL="https://github.com/SoulGarage/api.git"
 CLONE_DIR="./backend"
 DEST_DIR="../"
-FILES=("README.md" ".env.example" ".github" ".husky" ".vscode" "prisma" "docker-compose.yml" ".prettierrc" "eslint.config.mjs")
-
+FILES=("README.md" ".env.example" ".github" ".husky" ".vscode" "prisma" "docker-compose.yml" ".prettierrc" "eslint.config.mjs" ".npmrc")
 cd ./apps
 
 rm -rf ./backend

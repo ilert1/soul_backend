@@ -1,0 +1,11 @@
+{
+  "nuxt.isNuxtApp": false,
+  //Включает стилизацию схемы Prisma по одному шаблону у всех
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+  "prismaERDPreviewer.preferredTheme": "dark",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "always"
+  }
+}
