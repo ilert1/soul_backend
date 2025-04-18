@@ -15,8 +15,9 @@ else
   echo "Failed to clone repository"
   exit 1
 fi
-
+rm -rf "$DEST_DIR/.github" "$DEST_DIR/.husky" "$DEST_DIR/.vscode" "$DEST_DIR/prisma"
 # Цикл по файлам и перемещение каждого файла
 for FILE in "${FILES[@]}"; do
-  mv "$CLONE_DIR/$FILE" "$DEST_DIR/"
+  mv -f "$CLONE_DIR/$FILE" "$DEST_DIR/"
 done
+rm -rf ./backend/.git
