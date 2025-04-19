@@ -10,4 +10,4 @@ COPY . .
 
 RUN npm run admin:build
 
-CMD ["sh", "-c", "npm run admin start"]
+CMD ["sh", "-c", "npm run admin:start"]
