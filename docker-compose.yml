@@ -2,11 +2,25 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:latest
+    image: postgres:15
     restart: always
     environment:
       POSTGRES_DB: soul-api
       POSTGRES_USER: soul-api
       POSTGRES_PASSWORD: soul-api
     ports:
-      - "5432:5432"
+      - '5432:5432'
+    volumes:
+      - ./pg_data:/var/lib/postgres/data
+  backend:
+    build: ./apps/backend
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+  admin:
+    build: ./apps/admin
+    ports:
+      - '3001:3001'
+    depends_on:
+      - backend

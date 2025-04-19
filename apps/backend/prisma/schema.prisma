@@ -3,8 +3,16 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-generator client {
-    provider = "prisma-client-js"
+generator adminClient {
+    provider      = "prisma-client-js"
+    output        = "../../../apps/admin/node_modules/.prisma/client" // Указываем путь для клиента admin
+    binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+generator backendClient {
+    provider      = "prisma-client-js"
+    output        = "../node_modules/.prisma/client"
+    binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 enum UserRanks {

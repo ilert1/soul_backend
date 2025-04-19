@@ -4,7 +4,7 @@
 REPO_URL="https://github.com/SoulGarage/api.git"
 CLONE_DIR="./backend"
 DEST_DIR="../"
-FILES=("README.md" ".github" ".husky" ".vscode" "docker-compose.yml" ".npmrc")
+FILES=("README.md" ".github" ".husky" ".vscode" ".npmrc")
 cd ./apps
 
 rm -rf ./backend
@@ -21,3 +21,4 @@ for FILE in "${FILES[@]}"; do
   mv -f "$CLONE_DIR/$FILE" "$DEST_DIR/"
 done
 rm -rf ./backend/.git
+rm ./backend/docker-compose.yml
