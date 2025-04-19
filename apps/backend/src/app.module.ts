@@ -56,6 +56,14 @@ import { EventUserService } from './modules/event/services/event-user.service';
 import { EventParticipationService } from './modules/event/services/event-participation.service';
 import { EventQrService } from './modules/event/services/event-qr.service';
 import { EventCrudService } from './modules/event/services/event-crud.service';
+import { TaskCheckinController } from './modules/task/controllers/task-checkin.controller';
+import { TaskCrudController } from './modules/task/controllers/task-crud.controller';
+import { TaskManagementController } from './modules/task/controllers/task-management.controller';
+import { TaskProgressController } from './modules/task/controllers/task-progress.controller';
+import { TaskCheckinService } from './modules/task/services/task-checkin.service';
+import { TaskCrudService } from './modules/task/services/task-crud.service';
+import { TaskManagementService } from './modules/task/services/task-management.service';
+import { TaskProgressService } from './modules/task/services/task-progress.service';
 
 @Module({
   imports: [
@@ -94,6 +102,11 @@ import { EventCrudService } from './modules/event/services/event-crud.service';
     EventParticipationController,
     EventQrController,
     EventCrudController, // crud controller всегда в конце
+    // Task Controllers
+    TaskCheckinController,
+    TaskManagementController,
+    TaskProgressController,
+    TaskCrudController, // crud controller всегда в конце
     //
     CountryController,
     CurrencyController,
@@ -115,6 +128,11 @@ import { EventCrudService } from './modules/event/services/event-crud.service';
     EventParticipationService,
     EventQrService,
     EventCrudService,
+    // Task Services
+    TaskCheckinService,
+    TaskManagementService,
+    TaskProgressService,
+    TaskCrudService,
     //
     RatingService,
     CountryService,

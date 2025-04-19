@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { countries } from './country-data';
 import { randomUUID } from 'crypto';
 import { currency } from './currency-data';
+import { tasks } from './task-data';
 
 const prisma = new PrismaClient();
 
@@ -25,6 +26,17 @@ const seedDatabase = async (): Promise<void> => {
         await prisma.currency.createMany({
           data: currency,
         });
+      }
+
+      //  Проверяем задания
+      for (const task of tasks) {
+        const existingTask = await prisma.task.findUnique({
+          where: { key: task.key },
+        });
+
+        if (!existingTask) {
+          await prisma.task.create({ data: task });
+        }
       }
 
       if (process.env.NODE_ENV !== 'development') {

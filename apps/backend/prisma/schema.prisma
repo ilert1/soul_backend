@@ -9,14 +9,8 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-generator adminClient {
+generator client {
     provider = "prisma-client-js"
-    output   = "../../../apps/admin/node_modules/.prisma/client" // Указываем путь для клиента admin
-}
-
-generator backendClient {
-    provider = "prisma-client-js"
-    output   = "../node_modules/.prisma/client"
 }
 
 enum UserRanks {
@@ -56,6 +50,8 @@ model User {
     farmingTime            Int            @default(28800000)
     farmingSession         Farming?
     notifications          Notification[]
+    userProgress           UserTaskProgress[]
+
 }
 
 model TelegramUser {
@@ -272,4 +268,52 @@ model Experience {
     userId    String
     type      ExperienceType
     user      User           @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  key          TaskList           @id
+  type         TaskType
+  title        String
+  description  String?
+  goal         Int
+  rewardSp     Int
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  userProgress UserTaskProgress[]
+}
+
+model UserTaskProgress {
+  id          String     @id @default(uuid())
+  userId      String
+  taskKey     TaskList
+  progress    Int        @default(0)
+  status      TaskStatus @default(IN_PROGRESS)
+  updatedAt   DateTime   @updatedAt @map("created_at")
+  completedAt DateTime?  @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskKey], references: [key])
+
+  @@unique([userId, taskKey])
+}
+
+enum TaskType {
+  DAILY
+  WEEKLY
+  SECTION_TRAINING
+  SECTION_MEETINGS
+  SECTION_FRIENDS
+  SECTION_FARMING
+  PARTNER
+}
+
+enum TaskStatus {
+  IN_PROGRESS
+  COMPLETED
+  REWARD_COLLECTED
+}
+
+enum TaskList {
+  CHECKIN
+  PROFILE_COMPLETED
 }
