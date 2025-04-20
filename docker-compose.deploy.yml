@@ -14,13 +14,28 @@ services:
       - ./pg_data:/var/lib/postgresql/data
     networks:
       - soul-backend-network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'pg_isready',
+          '-U',
+          '${POSTGRES_USER:-soul-api}',
+          '-d',
+          '${POSTGRES_DB:-soul-api}',
+        ]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
 
   backend:
     build: ./apps/backend
     ports:
       - '3000:3000'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - soul-backend-network
     restart: on-failure
@@ -30,7 +45,8 @@ services:
     ports:
       - '3001:3001'
     depends_on:
-      - backend
+      db:
+        condition: service_healthy
     networks:
       - soul-backend-network
 
