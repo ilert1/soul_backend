@@ -5,22 +5,34 @@ services:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_DB: soul-api
-      POSTGRES_USER: soul-api
-      POSTGRES_PASSWORD: soul-api
+      POSTGRES_DB: ${POSTGRES_DB:-soul-api}
+      POSTGRES_USER: ${POSTGRES_USER:-soul-api}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soul-api}
     ports:
       - '5432:5432'
     volumes:
-      - ./pg_data:/var/lib/postgres/data
+      - ./pg_data:/var/lib/postgresql/data
+    networks:
+      - soul-backend-network
+
   backend:
     build: ./apps/backend
     ports:
       - '3000:3000'
     depends_on:
       - db
+    networks:
+      - soul-backend-network
+    restart: on-failure
+
   admin:
     build: ./apps/admin
     ports:
       - '3001:3001'
     depends_on:
       - backend
+    networks:
+      - soul-backend-network
+
+networks:
+  soul-backend-network:
