@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-soul-api}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soul-api}
     ports:
-      - '${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}'
+      - '5434:5434'
     volumes:
       - ./pg_data:/var/lib/postgresql/data
     networks:
@@ -32,7 +32,7 @@ services:
   backend:
     build: ./apps/backend
     ports:
-      - '3000:3000'
+      - '3005:3005'
     depends_on:
       db:
         condition: service_healthy
@@ -43,7 +43,7 @@ services:
   admin:
     build: ./apps/admin
     ports:
-      - '3001:3001'
+      - '3006:3006'
     depends_on:
       db:
         condition: service_healthy
@@ -52,3 +52,4 @@ services:
 
 networks:
   soul-backend-network:
+    driver: bridge
