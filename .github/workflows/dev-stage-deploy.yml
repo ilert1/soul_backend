@@ -50,7 +50,7 @@ jobs:
             cd /apps/backend && \
             npx prisma generate && \
             cd ../.. && \
-            docker-compose -f docker-compose.deploy.yml up -d --build
+            docker compose -f docker-compose.deploy.yml up -d --build
           EOF
         env:
           DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}
