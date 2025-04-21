@@ -10,6 +10,4 @@ RUN npm i
 
 COPY . .
 
-RUN npm run build
-
 CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm run build && npm run start"]
