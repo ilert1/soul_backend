@@ -47,7 +47,7 @@ jobs:
           ssh ${DEV_SSH_USER}@${DEV_SSH_HOST} << 'EOF'
             cd /home/soul_backend/backend && \
             git pull origin dev && \
-            cd /apps/backend && \
+            cd apps/backend && \
             npx prisma generate && \
             cd ../.. && \
             docker compose -f docker-compose.deploy.yml up -d --build
