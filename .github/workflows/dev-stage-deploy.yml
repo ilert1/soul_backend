@@ -29,7 +29,7 @@ jobs:
         working-directory: apps/admin
         run: |
           npm install
-          npm run build
+          npm run admin:build
 
       - name: Add SSH key to ssh-agent
         run: |
