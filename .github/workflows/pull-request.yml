@@ -1,0 +1,54 @@
+name: Pre-merge tests
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      # Развертывание PostgreSQL
+      postgres:
+        image: postgres:15 # Укажите нужную версию PostgreSQL
+        env:
+          POSTGRES_USER: soul-api
+          POSTGRES_PASSWORD: soul-api
+          POSTGRES_DB: soul-api
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # Шаг 1: Клонирование репозитория
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Шаг 2: Настройка Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "23" # Укажите версию Node.js, которую использует ваш проект
+
+      # Шаг 3: Создание .env из .env.example
+      - name: Create .env from .env.example
+        run: cd apps/backend && cp .env.example .env
+
+      # Шаг 4: Установка зависимостей
+      - name: Install dependencies
+        run: npm install
+
+      # Шаг 5: Инициализация схемы БД
+      - name: Prisma schema init
+        run: npx prisma migrate deploy
+
+      # Шаг 6: Запуск тестов
+      - name: Run tests
+        run: npm run test:deploy
