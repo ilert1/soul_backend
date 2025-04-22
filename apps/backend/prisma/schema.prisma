@@ -1,0 +1,353 @@
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator adminClient {
+    provider      = "prisma-client-js"
+    output        = "../../../apps/admin/node_modules/.prisma/client" // Указываем путь для клиента admin
+    binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+generator backendClient {
+    provider      = "prisma-client-js"
+    output        = "../node_modules/.prisma/client"
+    binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+}
+
+enum UserRanks {
+    user
+    ambassador
+}
+
+model User {
+    id                     String             @id @default(uuid())
+    fullName               String             @map("full_name")
+    username               String?
+    languageCode           String?
+    description            String?
+    hashedRefreshToken     String?            @map("hashed_refresh_token")
+    isActive               Boolean            @default(true) @map("is_active")
+    telegramUser           TelegramUser?
+    createdAt              DateTime           @default(now()) @map("created_at")
+    updatedAt              DateTime           @updatedAt @map("updated_at")
+    country                Country?           @relation(fields: [countryId], references: [id])
+    countryId              Int?               @map("country_id")
+    activities             Activity[]
+    events                 Event[]            @relation("CreatedEvents")
+    wallet                 Wallet?
+    avatarImage            Image?             @relation(fields: [avatarImageId], references: [id])
+    avatarImageId          String?            @map("avatar_image_id")
+    inviterUser            Invite[]           @relation(name: "InviterUser")
+    inviteeUser            Invite?            @relation(name: "InviteeUser")
+    availableInvites       Int                @default(3) @map("available_invites")
+    totalInvites           Int                @default(3) @map("total_invites")
+    totalReferralPoints    Float              @default(0.0) @map("total_referral_points")
+    experience             Int                @default(0)
+    experiences            Experience[]
+    rank                   UserRanks          @default(user)
+    showActivityToOthers   Boolean            @default(true) @map("show_activity_to_others")
+    showSoulPointsToOthers Boolean            @default(true) @map("show_soul_points_to_others")
+    farmingRate            Int                @default(1) @map("farming_rate")
+    farmingTime            Int                @default(28800000) @map("farming_time")
+    farmingSession         Farming?
+    notifications          Notification[]
+    userProgress           UserTaskProgress[]
+
+    @@map("users")
+}
+
+model TelegramUser {
+    telegramId   String   @id @unique @map("telegram_id")
+    fullName     String   @map("full_name")
+    username     String?
+    isBot        Boolean  @default(false) @map("is_bot")
+    languageCode String?  @map("language_code")
+    user         User?    @relation(fields: [userId], references: [id])
+    userId       String?  @unique @map("user_id")
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+    countryId    Int?     @map("country_id")
+
+    @@map("telegram_users")
+}
+
+model Image {
+    id         String   @id @default(uuid())
+    name       String
+    data       String
+    mimeType   String   @map("mime_type")
+    size       Int
+    uploadedAt DateTime @default(now()) @map("uploaded_at")
+    user       User[]
+    event      Event?
+
+    @@map("images")
+}
+
+model Country {
+    id    Int    @id @default(autoincrement())
+    name  String @unique
+    code  String @unique
+    users User[] @relation
+
+    @@map("countries")
+}
+
+model Wallet {
+    id               String        @id @default(uuid())
+    isSystem         Boolean       @default(false) @map("is_system")
+    balance          Float         @default(0.0)
+    createdAt        DateTime      @default(now()) @map("created_at")
+    updatedAt        DateTime      @updatedAt @map("updated_at")
+    user             User?         @relation(fields: [userId], references: [id])
+    userId           String?       @unique @map("user_id")
+    event            Event?        @relation(fields: [eventId], references: [id])
+    eventId          String?       @unique @map("event_id")
+    transactionsFrom Transaction[] @relation(name: "FromWallet")
+    transactionsTo   Transaction[] @relation(name: "ToWallet")
+
+    @@map("wallets")
+}
+
+enum TransactionType {
+    WELCOME_BONUS // Приветственное вознаграждение по итогу анализа телеграм профиля пользователя
+    FARM_REWARD // Начисление баллов за фарминг  
+    REFERRAL_REWARD // Бонус за приглашение друга (10% от его потраченных баллов)  
+
+    TASK_REWARD // Вознаграждение за выполнение внутриигровых заданий  
+    FORUM_REWARD // Вознаграждение за активности на форуме (активно после добавления бота)  
+    BUST_FRIENDS_CHARGE // Списание за увеличение лимита инвайтов  
+
+    EVENT_FUND_DEPOSIT // Организатор пополняет бонусный фонд мероприятия  
+    EVENT_FUND_DISTRIBUTION // Распределение бонусного фонда между участниками  
+    EVENT_FUND_REFUND // Возврат бонусного фонда, если мероприятие отменено  
+    EVENT_CREATION_CHARGE // Списание за создание встречи  
+}
+
+enum TransactionStatus {
+    PENDING
+    COMPLETED
+    FAILED
+    CANCELLED
+}
+
+model Transaction {
+    id           String            @id @default(uuid())
+    amount       Float
+    type         TransactionType
+    status       TransactionStatus @default(PENDING)
+    description  String?
+    fromWalletId String            @map("from_wallet_id")
+    fromWallet   Wallet            @relation(name: "FromWallet", fields: [fromWalletId], references: [id])
+    toWalletId   String            @map("to_wallet_id")
+    toWallet     Wallet            @relation(name: "ToWallet", fields: [toWalletId], references: [id])
+    createdAt    DateTime          @default(now()) @map("created_at")
+    updatedAt    DateTime          @updatedAt @map("updated_at")
+
+    @@map("transactions")
+}
+
+model Activity {
+    id             String    @id @default(uuid())
+    userId         String    @map("user_id")
+    eventId        String    @map("event_id")
+    joinedAt       DateTime  @default(now()) @map("joined_at")
+    user           User      @relation(fields: [userId], references: [id])
+    event          Event     @relation(fields: [eventId], references: [id])
+    rating         Int?
+    isConfirmed    Boolean   @default(false) @map("is_confirmed")
+    isConfirmedAt  DateTime? @map("is_confirmed_at")
+    receivedPoints Int?      @map("received_points")
+
+    @@map("activities")
+}
+
+enum EntryCondition {
+    FREE
+    DONATION
+    PAID
+}
+
+enum BonusDistributionEnum {
+    ALL
+    FIRST
+    FIRST_N
+}
+
+model Event {
+    id                    String                @id @default(uuid())
+    title                 String                @db.VarChar(255)
+    description           String?
+    imageId               String?               @unique @map("image_id")
+    image                 Image?                @relation(fields: [imageId], references: [id])
+    startDate             DateTime              @map("start_date")
+    finishDate            DateTime              @map("finish_date")
+    deposit               Int?
+    bonusDistributionType BonusDistributionEnum @default(ALL) @map("bonus_distribution_type")
+    bonusDistributionN    Int?                  @map("bonus_distribution_n")
+    guestLimit            Int?                  @map("guest_limit")
+    creatorId             String                @map("creator_id")
+    creator               User                  @relation("CreatedEvents", fields: [creatorId], references: [id])
+    createdAt             DateTime              @default(now()) @map("created_at")
+    updatedAt             DateTime              @updatedAt @map("updated_at")
+    activities            Activity[]
+    wallet                Wallet?
+    placeId               String                @map("place_id")
+    place                 Place                 @relation(fields: [placeId], references: [id])
+    averageRating         Float?                @map("average_rating")
+    ratingDetails         Rating?               @relation("EventRating")
+    isArchived            Boolean               @default(false) @map("is_archived")
+    entryCondition        EntryCondition        @default(FREE) @map("entry_condition")
+    entryFee              Float?                @map("entry_fee")
+    currencyId            Int?                  @map("currency_id")
+    currency              Currency?             @relation(fields: [currencyId], references: [id])
+
+    @@map("events")
+}
+
+model Rating {
+    id            String  @id @default(uuid())
+    eventId       String? @unique @map("event_id")
+    event         Event?  @relation("EventRating", fields: [eventId], references: [id])
+    votesForOne   Int     @default(0) @map("votes_for_one")
+    votesForTwo   Int     @default(0) @map("votes_for_two")
+    votesForThree Int     @default(0) @map("votes_for_three")
+    votesForFour  Int     @default(0) @map("votes_for_four")
+    votesForFive  Int     @default(0) @map("votes_for_five")
+
+    @@map("ratings")
+}
+
+model Invite {
+    id                  String   @id @default(uuid())
+    inviterId           String   @map("inviter_id")
+    inviteeId           String   @unique @map("invitee_id")
+    inviterUser         User     @relation("InviterUser", fields: [inviterId], references: [id])
+    inviteeUser         User?    @relation("InviteeUser", fields: [inviteeId], references: [id])
+    createdAt           DateTime @default(now()) @map("created_at")
+    updatedAt           DateTime @updatedAt @map("updated_at")
+    referralPointsGiven Float    @default(0.0) @map("referral_points_given")
+
+    @@map("invites")
+}
+
+model Place {
+    id          String   @id @default(uuid())
+    name        String
+    description String?
+    latitude    Float
+    longitude   Float
+    address     String?
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+    events      Event[]
+
+    @@map("places")
+}
+
+model Farming {
+    id         String   @id @default(uuid())
+    userId     String   @unique @map("user_id")
+    user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    startDate  DateTime @map("start_date")
+    finishDate DateTime @map("finish_date")
+
+    @@map("farmings")
+}
+
+model Currency {
+    id     Int     @id @default(autoincrement())
+    code   String  @unique
+    events Event[] @relation
+
+    @@map("currencies")
+}
+
+model Notification {
+    id        String   @id @default(uuid())
+    title     String
+    data      Json
+    isRead    Boolean  @default(false) @map("is_read")
+    userId    String   @map("user_id")
+    user      User     @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("notifications")
+}
+
+enum ExperienceType {
+    MEETING_VISIT
+    MEETING_RATE
+    OWN_MEETING_PER_GUEST
+    OWN_MEETING_PER_RATING_1
+    OWN_MEETING_PER_RATING_2
+    OWN_MEETING_PER_RATING_3
+    OWN_MEETING_PER_RATING_4
+    OWN_MEETING_PER_RATING_5
+    FRIENDS_PER_INVITE
+    FARMING_PER_TIMER
+}
+
+model Experience {
+    id        String         @id @default(uuid())
+    createdAt DateTime       @default(now()) @map("created_at")
+    value     Int
+    userId    String         @map("user_id")
+    type      ExperienceType
+    user      User           @relation(fields: [userId], references: [id])
+
+    @@map("experiences")
+}
+
+model Task {
+    key          TaskList           @id
+    type         TaskType
+    title        String
+    description  String?
+    goal         Int
+    rewardSp     Int
+    createdAt    DateTime           @default(now())
+    updatedAt    DateTime           @updatedAt
+    userProgress UserTaskProgress[]
+
+    @@map("tasks")
+}
+
+model UserTaskProgress {
+    id          String     @id @default(uuid())
+    userId      String
+    taskKey     TaskList
+    progress    Int        @default(0)
+    status      TaskStatus @default(IN_PROGRESS)
+    updatedAt   DateTime   @updatedAt @map("created_at")
+    completedAt DateTime?  @map("completed_at")
+
+    user User @relation(fields: [userId], references: [id])
+    task Task @relation(fields: [taskKey], references: [key])
+
+    @@unique([userId, taskKey])
+    @@map("user_task_progress")
+}
+
+enum TaskType {
+    DAILY
+    WEEKLY
+    SECTION_TRAINING
+    SECTION_MEETINGS
+    SECTION_FRIENDS
+    SECTION_FARMING
+    PARTNER
+}
+
+enum TaskStatus {
+    IN_PROGRESS
+    COMPLETED
+    REWARD_COLLECTED
+}
+
+enum TaskList {
+    CHECKIN
+    PROFILE_COMPLETED
+}

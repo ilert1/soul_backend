@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "farmingTime" SET DEFAULT 28800000;

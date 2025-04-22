@@ -1,0 +1,3 @@
+export const POINTS_FOR_PREMIUM = 1000;
+export const POINTS_FOR_ONE_YEAR_TG = 100;
+export const POINTS_FOR_REGISTRATION = 20;

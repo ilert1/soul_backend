@@ -1,0 +1,15 @@
+export const REFERRAL_PERCENTAGE = 0.1;
+
+export const FIRST_INVITES_PURCHASE_PRICE = 300;
+
+export const LAST_INVITES_PURCHASE_PRICE = 600;
+
+export const START_INVITES_COUNT = 3;
+
+export const AVERAGE_INVITES_COUNT = 6;
+
+export const MAX_INVITES_COUNT = 12;
+
+export const FIRST_INVITES_PURCHASE_COUNT = 3;
+
+export const LAST_INVITES_PURCHASE_COUNT = 6;
