@@ -47,7 +47,7 @@ jobs:
 
       # Шаг 5: Инициализация схемы БД
       - name: Prisma schema init
-        run: npx prisma migrate deploy
+        run: npx prisma generate && npx prisma migrate deploy
 
       # Шаг 6: Запуск тестов
       - name: Run tests
