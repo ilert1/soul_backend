@@ -42,6 +42,9 @@ import { NotificationsController } from './modules/notification/notification.con
 import { NotificationsModule } from './modules/notification/notification.module';
 import { CurrencyService } from './modules/static/currency.service';
 import { CurrencyController } from './modules/static/currency.controller';
+import { TelegramModule } from './telegram/telegram.module';
+import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
+import * as path from 'path';
 import { TestNotificationController } from './modules/notification/test-notification.controller';
 import { ExperienceModule } from './modules/experience/experience.module';
 import { ExperienceService } from './modules/experience/experience.service';
@@ -71,6 +74,17 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
       isGlobal: true,
       load: [jwtConfig, refreshJwtConfig],
     }),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true,
+      },
+      resolvers: [
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+      ],
+    }),
     PrismaModule,
     AuthModule,
     UserModule,
@@ -88,6 +102,7 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
     FarmModule,
     WsModule,
     NotificationsModule,
+    TelegramModule,
     ExperienceModule,
   ],
   controllers: [
