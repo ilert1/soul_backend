@@ -42,7 +42,7 @@ jobs:
         working-directory: apps/backend
 
       - name: Prisma schema init
-        run: npx prisma generate && npx prisma migrate deploy
+        run: npx prisma generate && npx prisma migrate deploy && npx prisma db seed
         working-directory: apps/backend
 
       - name: Run tests
