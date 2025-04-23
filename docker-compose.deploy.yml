@@ -1,28 +1,29 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
     image: postgres:15
     restart: always
+    container_name: db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-soul-api}
       POSTGRES_USER: ${POSTGRES_USER:-soul-api}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soul-api}
     ports:
-      - '5434:5432'
+      - "5434:5432"
     volumes:
       - ./pg_data:/var/lib/postgresql/data
     networks:
-      - soul-backend-network
+      - backend-net
     healthcheck:
       test:
         [
-          'CMD',
-          'pg_isready',
-          '-U',
-          '${POSTGRES_USER:-soul-api}',
-          '-d',
-          '${POSTGRES_DB:-soul-api}',
+          "CMD",
+          "pg_isready",
+          "-U",
+          "${POSTGRES_USER:-soul-api}",
+          "-d",
+          "${POSTGRES_DB:-soul-api}",
         ]
       interval: 10s
       retries: 5
@@ -31,25 +32,27 @@ services:
 
   backend:
     build: ./apps/backend
+    restart: always
+    container_name: backend
     ports:
-      - '3005:3005'
+      - "3005:3005"
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - soul-backend-network
-    restart: on-failure
+      - backend-net
 
   admin:
     build: ./apps/admin
+    restart: always
+    container_name: admin
     ports:
-      - '3006:3006'
+      - "3006:3006"
     depends_on:
-      db:
-        condition: service_healthy
+      - backend
     networks:
-      - soul-backend-network
+      - backend-net
 
 networks:
-  soul-backend-network:
+  backend-net:
     driver: bridge
