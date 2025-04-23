@@ -19,8 +19,9 @@ type initDataUnsafe = {
 
 type UserData = {
   id: string;
+  fullName?: string;
   username?: string;
-  firstName: string;
+  firstName?: string;
   lastName?: string;
   isBot?: boolean;
   languageCode?: string;
