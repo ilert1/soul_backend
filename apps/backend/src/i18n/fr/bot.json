@@ -1,0 +1,14 @@
+{
+  "welcome": "Bienvenue sur #SOUL 🌎",
+  "letsBuildTogether": "Construisons ensemble un monde sans frontières !",
+  "findNewFrineds": "🔸 Cherchez de nouveaux amis et créez vos propres rencontres partout dans le monde",
+  "gainSoul": "🔸 Gagnez de l'expérience grâce à votre activité et collectez des points SOUL - grimpez dans le classement global et les classements locaux des pays",
+  "forumAndCommunity": "🔸 Et pour vous connecter avec les communautés locales de différents pays, rendez-vous sur le forum",
+  "openApp": "Ouvrir l’application SOUL",
+  "goToForum": "Aller au forum",
+
+  "startCommandText": "Démarrer/Redémarrer le bot",
+  "helpCommandText": "Afficher le texte d'aide",
+  "languageCommandText": "Changer la langue du bot",
+  "language_changed": "Langue mise à jour !"
+}

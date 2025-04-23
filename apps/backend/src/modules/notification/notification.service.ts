@@ -45,18 +45,15 @@ export class NotificationsService {
     userId: string;
     paginationDto: PaginationDto;
   }) {
-    const result = await paginate<NotificationResponseDto>({
+    return await paginate<NotificationResponseDto>({
       prisma: this.prisma,
       model: 'notification',
       paginationDto,
       options: {
         where: { userId },
-        include: { user: true },
         order: { createdAt: 'desc' },
       },
     });
-
-    return result;
   }
 
   async markAllAsRead(userId: string) {

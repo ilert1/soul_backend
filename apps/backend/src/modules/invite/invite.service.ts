@@ -73,8 +73,6 @@ export class InviteService {
   }
 
   getHash(inviterId: string): ResponseHashDto {
-    const HASH_SALT = process.env.HASH_SALT || 'your_hash_salt';
-
     return { hash: getObjectHash({ inviterId }) };
   }
 
