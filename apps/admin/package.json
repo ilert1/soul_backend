@@ -9,7 +9,7 @@
   "scripts": {
     "admin:build": "npx tsc",
     "admin:start": "node dist/app.js",
-    "admin:dev": "npm run admin:build && npm run admin:start ",
+    "admin:dev": "nodemon --watch src --ext ts,js --exec \"npm run admin:build && npm run admin:start\"",
     "admin:debug": "npm run admin:build && npm run admin:start --inspect "
   },
   "dependencies": {
@@ -29,6 +29,7 @@
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
     "globals": "^16.0.0",
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1"

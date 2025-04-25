@@ -351,3 +351,12 @@ enum TaskList {
     CHECKIN
     PROFILE_COMPLETED
 }
+
+model Admin {
+    id        String   @id @default(uuid())
+    email     String   @unique
+    password  String
+    isPrimary Boolean  @default(false)
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+}

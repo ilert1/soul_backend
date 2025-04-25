@@ -1,44 +1,28 @@
 import express from 'express';
+import { buildAdminRouter } from './config/auth.js';
 import AdminJS from 'adminjs';
-import AdminJSExpress from '@adminjs/express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './config/prisma.client.js';
+import { adminResource } from './resources/admin.resources.js';
+import { generateResources } from './resources/db.resources.js';
 import { Database, Resource } from '@adminjs/prisma';
-import 'dotenv/config';
-import { generateResources } from './db.resources.js';
 
 AdminJS.registerAdapter({ Database, Resource });
 
-const start = async () => {
-  const prisma = new PrismaClient();
-
+const start = () => {
   const adminJs = new AdminJS({
-    resources: generateResources(prisma),
+    resources: [...generateResources(prisma), adminResource()],
     rootPath: '/admin',
   });
 
   const app = express();
-
-  const ADMIN = {
-    email: process.env.ADMIN_EMAIL,
-    password: process.env.ADMIN_PASSWORD,
-  };
-
-  const router = AdminJSExpress.buildAuthenticatedRouter(adminJs, {
-    authenticate: async (email, password) => {
-      if (email === ADMIN.email && password === ADMIN.password) {
-        return ADMIN;
-      }
-      return null;
-    },
-    cookiePassword: process.env.COOKIE_SECRET || 'cookie-secret',
-  });
+  const router = buildAdminRouter(adminJs);
 
   app.use(adminJs.options.rootPath, router);
 
   const port = process.env.PORT || 3001;
   app.listen(port, () => {
     console.log(
-      `AdminJS is running at http://localhost:${port}${adminJs.options.rootPath}`,
+      `✅ AdminJS запущен на http://localhost:${port}${adminJs.options.rootPath}`,
     );
   });
 };

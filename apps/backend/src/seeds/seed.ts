@@ -3,8 +3,11 @@ import { countries } from './country-data';
 import { randomUUID } from 'crypto';
 import { currency } from './currency-data';
 import { tasks } from './task-data';
+import * as crypto from 'crypto';
 
 const prisma = new PrismaClient();
+const adminEmail = process.env.ADMIN_EMAIL;
+const adminPassword = process.env.ADMIN_PASSWORD;
 
 const seedDatabase = async (): Promise<void> => {
   await prisma.$connect();
@@ -36,6 +39,27 @@ const seedDatabase = async (): Promise<void> => {
 
         if (!existingTask) {
           await prisma.task.create({ data: task });
+        }
+      }
+
+      // Проверка и создание админа
+      if (adminEmail && adminPassword) {
+        const existingAdmin = await prisma.admin.findUnique({
+          where: { email: adminEmail },
+        });
+
+        if (!existingAdmin) {
+          const hashedPassword = crypto
+            .createHash('sha256')
+            .update(adminPassword)
+            .digest('hex');
+          await prisma.admin.create({
+            data: {
+              email: adminEmail,
+              password: hashedPassword,
+              isPrimary: true,
+            },
+          });
         }
       }
 
