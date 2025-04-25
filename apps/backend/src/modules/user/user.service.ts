@@ -116,6 +116,8 @@ export class UserService {
         TaskList.PROFILE_COMPLETED,
       );
     }
+
+    return result;
   }
 
   async banUser(id: string, isActive: boolean) {

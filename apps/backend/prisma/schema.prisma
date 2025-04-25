@@ -389,3 +389,14 @@ enum TaskList {
     COLLECTED_2500_SP
     COLLECTED_5000_SP
 }
+
+model Admin {
+    id        String   @id @default(uuid())
+    email     String   @unique
+    password  String
+    isPrimary Boolean  @default(false) @map("is_primary")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("admins")
+}
