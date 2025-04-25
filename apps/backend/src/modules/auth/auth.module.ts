@@ -22,6 +22,7 @@ import { WsJwtGuard } from './guards/ws-jwt-auth/ws-jwt.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshJwtStrategy } from './strategies/refresh.strategy';
 import { ExperienceService } from '../experience/experience.service';
+import { TaskModule } from '../task/task.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ExperienceService } from '../experience/experience.service';
     LoggerModule,
     TelegramUserModule,
     AvatarModule,
+    TaskModule,
   ],
   controllers: [AuthController],
   providers: [

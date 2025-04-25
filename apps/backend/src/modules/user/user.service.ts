@@ -1,21 +1,21 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, TaskList, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/pagination.utils';
 import { UserResponseDto } from './dto/user-response.dto';
+import { TaskManagementService } from '../task/services/task-management.service';
 
 @Injectable()
 export class UserService {
   private readonly excludeFields: string[] = ['hashedRefreshToken'];
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly taskManagementService: TaskManagementService,
+  ) {}
 
   async updateHashedRefreshToken(userId: string, hashedRefreshToken: string) {
     return await this.prisma.user.update({
@@ -100,7 +100,7 @@ export class UserService {
 
     await this.prisma.user.findUniqueOrThrow({ where: { id } });
 
-    return await this.prisma.user.update({
+    const result = await this.prisma.user.update({
       where: { id },
       data,
       include: {
@@ -108,6 +108,14 @@ export class UserService {
         wallet: true,
       },
     });
+
+    // Подтверждение задания
+    if (result.description && result.country) {
+      await this.taskManagementService.confirmUserTask(
+        result.id,
+        TaskList.PROFILE_COMPLETED,
+      );
+    }
   }
 
   async banUser(id: string, isActive: boolean) {

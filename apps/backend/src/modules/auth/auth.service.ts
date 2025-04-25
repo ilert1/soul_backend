@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, TransactionType, User } from '@prisma/client';
+import { Prisma, TaskList, TransactionType, User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { getObjectFromHash } from 'src/common/utils/hash.utils';
@@ -36,6 +36,7 @@ import {
   POINTS_FOR_REGISTRATION,
 } from './auth.consts';
 import { ExperienceService } from '../experience/experience.service';
+import { TaskManagementService } from '../task/services/task-management.service';
 
 @Injectable()
 export class AuthService {
@@ -53,6 +54,7 @@ export class AuthService {
     private inviteService: InviteService,
     private readonly transactionCreateService: TransactionCreateService,
     private readonly experienceServise: ExperienceService,
+    private readonly taskManagementService: TaskManagementService,
   ) {}
 
   async handleTelegramLogin(telegramData: TelegramData) {
@@ -159,6 +161,12 @@ export class AuthService {
           userId: inviterId,
           type: 'FRIENDS_PER_INVITE',
         });
+
+        // Выполняем проверку задания
+        await this.taskManagementService.verifyTaskCompletion(
+          inviterId,
+          TaskList.INVITED_FRIENDS,
+        );
       }
 
       analyzedProfile = await this.getTelegramUserAnalyze(
