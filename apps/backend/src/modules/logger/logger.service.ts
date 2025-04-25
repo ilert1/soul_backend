@@ -43,4 +43,8 @@ export class AppLoggerService implements LoggerService {
     const messageLog = `[${levelLog}] ${logMessage.statusCode} - [${logMessage.method}] ${logMessage.url} - Query: ${logMessage.query}, Body: ${logMessage.body}, Headers: ${logMessage.headers}`;
     this.logger[levelLog](messageLog);
   }
+
+  onModuleDestroy() {
+    this.logger.close();
+  }
 }
