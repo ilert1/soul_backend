@@ -1,0 +1,5 @@
+test
+.gitignore
+.prettierrc
+eslint.config.mjs
+.env.example
