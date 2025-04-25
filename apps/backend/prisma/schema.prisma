@@ -3,16 +3,8 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-generator adminClient {
-    provider      = "prisma-client-js"
-    output        = "../../../apps/admin/node_modules/.prisma/client" // Указываем путь для клиента admin
-    binaryTargets = ["native", "debian-openssl-1.1.x"]
-}
-
-generator backendClient {
-    provider      = "prisma-client-js"
-    output        = "../node_modules/.prisma/client"
-    binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+generator client {
+    provider = "prisma-client-js"
 }
 
 enum UserRanks {
@@ -349,5 +341,43 @@ enum TaskStatus {
 
 enum TaskList {
     CHECKIN
+    CHECKED_SOCIAL_MEDIA
+    SUBSCRIBED_SOUL_FORUM
+    SUBSCRIBED_INSTAGRAM
+    SHARED_ABOUT_SOUL
+    SHARED_WITH_FRIEND
+    ADDED_REFLINK_IN_TG_PROFILE
+    PREMIUM_SUPPORT
+    VOTED_SOUL_FORUM
+    SHARED_STORY_IN_TG
     PROFILE_COMPLETED
+    VIEWED_HOW_IT_WORKS
+    CREATED_FIRST_MEETING
+    HOLDED_MEETINGS
+    HOLDED_1_MEETINGS
+    HOLDED_5_MEETINGS
+    HOLDED_10_MEETINGS
+    HOLDED_20_MEETINGS
+    HOLDED_50_MEETINGS
+    MAX_GUESTS_IN_MEETING
+    MAX_GUESTS_5_IN_MEETING
+    MAX_GUESTS_10_IN_MEETING
+    MAX_GUESTS_20_IN_MEETING
+    MAX_GUESTS_50_IN_MEETING
+    INVITED_FRIENDS
+    INVITED_1_FRIENDS
+    INVITED_5_FRIENDS
+    INVITED_10_FRIENDS
+    INVITED_20_FRIENDS
+    INVITED_50_FRIENDS
+    INVITED_100_FRIENDS
+    COLLECTED_SP
+    COLLECTED_10_SP
+    COLLECTED_50_SP
+    COLLECTED_100_SP
+    COLLECTED_250_SP
+    COLLECTED_500_SP
+    COLLECTED_1000_SP
+    COLLECTED_2500_SP
+    COLLECTED_5000_SP
 }
