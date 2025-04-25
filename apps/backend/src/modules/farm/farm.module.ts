@@ -9,9 +9,10 @@ import { AppLoggerService } from '../logger/logger.service';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletModule } from '../wallet/wallet.module';
 import { ExperienceService } from '../experience/experience.service';
+import { TaskModule } from '../task/task.module';
 
 @Module({
-  imports: [PrismaModule, TransactionModule, WalletModule],
+  imports: [PrismaModule, TransactionModule, WalletModule, TaskModule],
   controllers: [FarmController],
   providers: [
     FarmService,

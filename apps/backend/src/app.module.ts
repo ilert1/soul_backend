@@ -67,6 +67,8 @@ import { TaskCheckinService } from './modules/task/services/task-checkin.service
 import { TaskCrudService } from './modules/task/services/task-crud.service';
 import { TaskManagementService } from './modules/task/services/task-management.service';
 import { TaskProgressService } from './modules/task/services/task-progress.service';
+import { TaskWeeklyController } from './modules/task/controllers/task-weekly.controller';
+import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
 
 @Module({
   imports: [
@@ -119,6 +121,7 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
     EventCrudController, // crud controller всегда в конце
     // Task Controllers
     TaskCheckinController,
+    TaskWeeklyController,
     TaskManagementController,
     TaskProgressController,
     TaskCrudController, // crud controller всегда в конце
@@ -145,6 +148,7 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
     EventCrudService,
     // Task Services
     TaskCheckinService,
+    TaskWeeklyService,
     TaskManagementService,
     TaskProgressService,
     TaskCrudService,

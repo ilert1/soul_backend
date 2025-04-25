@@ -76,7 +76,13 @@ export class TaskCheckinService {
         status: TaskStatus.COMPLETED,
         completedAt: now,
       },
-      select: { id: true, progress: true, status: true, completedAt: true },
+      select: {
+        userId: true,
+        taskKey: true,
+        progress: true,
+        status: true,
+        completedAt: true,
+      },
     });
 
     const wallet = await this.prisma.wallet.findFirst({ where: { userId } });

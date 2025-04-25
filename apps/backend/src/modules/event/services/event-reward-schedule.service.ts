@@ -5,9 +5,10 @@ import {
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, TransactionType } from '@prisma/client';
+import { Prisma, TaskList, TransactionType } from '@prisma/client';
 import { TransactionCreateService } from '../../transaction/transaction-create.service';
 import { AppLoggerService } from '../../logger/logger.service';
+import { TaskManagementService } from 'src/modules/task/services/task-management.service';
 
 @Injectable()
 export class EventRewardDistributionService {
@@ -15,6 +16,7 @@ export class EventRewardDistributionService {
     private readonly prisma: PrismaService,
     private readonly transactionCreateService: TransactionCreateService,
     private readonly loggerService: AppLoggerService,
+    private readonly taskManagementService: TaskManagementService,
   ) {}
 
   @Cron('0 * * * *') // Каждый час, в начале часа
@@ -23,9 +25,33 @@ export class EventRewardDistributionService {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const now = new Date();
 
-    const events = await this.getFinishedEventsWithDeposite(now, oneHourAgo);
+    const finishedEvents = await this.getAllFinishedEventsLastHour(
+      now,
+      oneHourAgo,
+    );
 
-    if (!events.length) {
+    // Собираем уникальные userId
+    const uniqueUserIds = [
+      ...new Set(finishedEvents.map((event) => event.creatorId)),
+    ];
+
+    // Одним проходом для каждого пользователя выполняем проверку задач
+    for (const userId of uniqueUserIds) {
+      await this.taskManagementService.verifyTaskCompletion(
+        userId,
+        TaskList.HOLDED_MEETINGS,
+      );
+      await this.taskManagementService.verifyTaskCompletion(
+        userId,
+        TaskList.MAX_GUESTS_IN_MEETING,
+      );
+    }
+
+    const eventsWithBalance = finishedEvents.filter(
+      (el) => el.wallet && el.wallet.balance > 0,
+    );
+
+    if (!eventsWithBalance.length) {
       this.loggerService.log(
         'No finished events for distribute reward. Abort scheduler service',
       );
@@ -33,7 +59,7 @@ export class EventRewardDistributionService {
       return;
     }
 
-    for (const event of events) {
+    for (const event of eventsWithBalance) {
       if (!event.wallet?.id) {
         throw new InternalServerErrorException('Кошелек события не существует');
       }
@@ -172,9 +198,10 @@ export class EventRewardDistributionService {
     }
 
     // система возврата остатков с кошелька события на системный кошелек
-    const eventsWithCashback = await this.getFinishedEventsWithDeposite(
+    const eventsWithCashback = await this.getAllFinishedEventsLastHour(
       now,
       oneHourAgo,
+      true,
     );
 
     if (eventsWithCashback) {
@@ -215,14 +242,18 @@ export class EventRewardDistributionService {
     this.loggerService.log('EventRewardDistributionService finished');
   }
 
-  private async getFinishedEventsWithDeposite(now: Date, oneHourAgo: Date) {
+  private async getAllFinishedEventsLastHour(
+    now: Date,
+    oneHourAgo: Date,
+    hasBalance?: boolean,
+  ) {
     return await this.prisma.event.findMany({
       where: {
         finishDate: {
           gte: oneHourAgo,
           lte: now,
         },
-        wallet: { balance: { gt: 0 } },
+        wallet: hasBalance ? { balance: { gt: 0 } } : undefined,
         isArchived: false,
       },
       include: {

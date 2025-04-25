@@ -5,7 +5,7 @@ import {
   NotFoundException,
   HttpException,
 } from '@nestjs/common';
-import { Prisma, Wallet, TransactionType } from '@prisma/client';
+import { Prisma, Wallet, TransactionType, TaskList } from '@prisma/client';
 import { getDistance } from 'src/common/utils/geoposition';
 import { AppLoggerService } from 'src/modules/logger/logger.service';
 import { NotificationsService } from 'src/modules/notification/notification.service';
@@ -19,6 +19,7 @@ import {
 } from '../dto/create-event.dto';
 import { ResponseEventDto } from '../dto/response-event.dto';
 import { EVENT_CREATE_COST } from '../event.constants';
+import { TaskManagementService } from 'src/modules/task/services/task-management.service';
 
 @Injectable()
 export class EventCrudService {
@@ -29,6 +30,7 @@ export class EventCrudService {
     private readonly placeService: PlaceService,
     private readonly transactionCreateService: TransactionCreateService,
     private readonly notificationsService: NotificationsService,
+    private readonly taskManagementService: TaskManagementService,
   ) {}
 
   async createEvent(
@@ -214,6 +216,12 @@ export class EventCrudService {
 
       throw new InternalServerErrorException(
         'Ошибка во время проведения транзакции',
+      );
+    } finally {
+      // Проверяем задание "Создание первого мероприятия"
+      await this.taskManagementService.verifyTaskCompletion(
+        currentUserId,
+        TaskList.CREATED_FIRST_MEETING,
       );
     }
   }

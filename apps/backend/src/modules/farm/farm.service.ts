@@ -5,10 +5,11 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { TransactionType } from '@prisma/client';
+import { TaskList, TransactionType } from '@prisma/client';
 import { TransactionCreateService } from '../transaction/transaction-create.service';
 import { Farming } from '@prisma/client';
 import { ExperienceService } from '../experience/experience.service';
+import { TaskManagementService } from '../task/services/task-management.service';
 
 @Injectable()
 export class FarmService {
@@ -16,6 +17,7 @@ export class FarmService {
     private readonly prisma: PrismaService,
     private readonly transactionCreateService: TransactionCreateService,
     private readonly experienceServise: ExperienceService,
+    private readonly taskManagementService: TaskManagementService,
   ) {}
 
   async startFarming(userId: string): Promise<Omit<Farming, 'id'>> {
@@ -88,6 +90,12 @@ export class FarmService {
         userId,
         type: 'FARMING_PER_TIMER',
       });
+
+      // Выполняем проверку задания
+      await this.taskManagementService.verifyTaskCompletion(
+        userId,
+        TaskList.COLLECTED_SP,
+      );
 
       await tx.farming.delete({ where: { id: user.farmingSession!.id } });
     });

@@ -3,27 +3,28 @@ import { TaskList, TaskStatus, TaskType } from '@prisma/client';
 
 export class TaskResponseDto {
   @ApiProperty({
-    example: 'PROFILE_COMPLETED',
+    example: 'SUBSCRIBED_INSTAGRAM',
     description: 'Уникальный ключ задания',
     enum: TaskList,
   })
   key: TaskList;
 
   @ApiProperty({
-    example: 'SECTION_TRAINING',
+    example: 'WEEKLY',
     description: 'Тип задания',
     enum: TaskType,
   })
   type: string;
 
   @ApiProperty({
-    example: 'Заполнить профиль',
+    example: 'Подписаться на Instagram проекта',
     description: 'Название задания',
   })
   title: string;
 
   @ApiProperty({
-    example: 'Заполните свой профиль для получения награды',
+    example:
+      'В Instagram мы публикуем важные новости, репостим сториз со встреч, рассказываем о локальных сообществах из разных стран',
     description: 'Описание задания',
     required: false,
   })
@@ -42,55 +43,21 @@ export class TaskResponseDto {
 export class UserTaskProgressResponseDto {
   @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'ID записи прогресса',
-  })
-  id: string;
-
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
     description: 'ID пользователя',
   })
-  userId?: string;
+  userId: string;
 
-  @ApiProperty({ example: 'PROFILE_COMPLETED', description: 'Ключ задания' })
-  taskKey?: TaskList;
+  @ApiProperty({
+    example: 'VIEWED_HOW_IT_WORKS',
+    description: 'Ключ задания',
+  })
+  taskKey: TaskList;
 
   @ApiProperty({ example: 1, description: 'Текущий прогресс выполнения' })
   progress: number;
 
   @ApiProperty({
-    example: 'IN_PROGRESS',
-    description: 'Статус выполнения',
-    enum: TaskStatus,
-  })
-  status: string;
-
-  @ApiProperty({
-    example: '2025-07-01T00:00:00.000Z',
-    description: 'Дата последнего обновления',
-  })
-  updatedAt?: Date;
-
-  @ApiProperty({
-    example: '2025-07-01T00:00:00.000Z',
-    description: 'Дата завершения задания',
-    required: false,
-  })
-  completedAt?: Date | null;
-}
-
-export class TaskProgressResponseDto {
-  @ApiProperty({
-    example: 'PROFILE_COMPLETED',
-    description: 'Уникальный ключ задания',
-  })
-  taskKey: string;
-
-  @ApiProperty({ example: 1, description: 'Текущий прогресс выполнения' })
-  progress: number;
-
-  @ApiProperty({
-    example: 'IN_PROGRESS',
+    example: 'COMPLETED',
     description: 'Статус выполнения',
     enum: TaskStatus,
   })
