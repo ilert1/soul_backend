@@ -17,6 +17,7 @@
     "@adminjs/prisma": "^5.0.3",
     "@prisma/client": "^5.22.0",
     "adminjs": "^7.8.15",
+    "argon2": "^0.43.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "prisma": "^6.6.0"

@@ -1,7 +1,12 @@
-import crypto from 'crypto';
+import * as argon2 from 'argon2';
 
-export const hashPassword = (password: string) =>
-  crypto.createHash('sha256').update(password).digest('hex');
+export const hashPassword = async (password: string): Promise<string> => {
+  return await argon2.hash(password);
+};
 
-export const comparePassword = (plain: string, hashed: string) =>
-  hashPassword(plain) === hashed;
+export const comparePassword = async (
+  plain: string,
+  hashed: string,
+): Promise<boolean> => {
+  return await argon2.verify(hashed, plain);
+};

@@ -25,14 +25,14 @@ export const adminResource = () => {
         new: {
           isAccessible: ({ currentAdmin }: ActionContext) =>
             currentAdmin?.isPrimary === true, // Только главный админ может создавать новых
-          before: (request: ActionRequest): Promise<ActionRequest> => {
+          before: async (request: ActionRequest): Promise<ActionRequest> => {
             if (request.payload?.password) {
-              request.payload.password = hashPassword(
+              request.payload.password = await hashPassword(
                 request.payload.password as string,
               );
             }
 
-            return Promise.resolve(request);
+            return request;
           },
         },
         edit: {
@@ -49,9 +49,11 @@ export const adminResource = () => {
 
               if (
                 existedAdmin &&
-                !comparePassword(password, existedAdmin.password)
+                !(await comparePassword(password, existedAdmin.password))
               ) {
-                request.payload.password = hashPassword(password);
+                request.payload.password = await hashPassword(password);
+              } else {
+                delete request.payload.password;
               }
             }
 
@@ -60,10 +62,23 @@ export const adminResource = () => {
               delete request.payload.isPrimary;
             }
 
-            return Promise.resolve(request);
+            return request;
           },
         },
         delete: {
+          isAccessible: ({ currentAdmin, record }: ActionContext) =>
+            Boolean(
+              currentAdmin?.isPrimary && record?.params?.isPrimary !== true, // Только главный админ может удалять
+            ),
+          before: async (request: ActionRequest): Promise<ActionRequest> => {
+            if (request.payload?.isPrimary) {
+              throw new Error('Нельзя удалить главного администратора');
+            }
+
+            return Promise.resolve(request);
+          },
+        },
+        bulkDelete: {
           isAccessible: ({ currentAdmin, record }: ActionContext) =>
             Boolean(
               currentAdmin?.isPrimary && record?.params?.isPrimary !== true, // Только главный админ может удалять
