@@ -28,7 +28,6 @@ import { Action, ActionType } from './types/action';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import { CurrentUser } from './types/current-user';
 import { Invitation } from './types/invitation';
-import { TelegramData, TelegramUserDataAnalyze } from './types/telegram-data';
 import { TransactionCreateService } from '../transaction/transaction-create.service';
 import {
   POINTS_FOR_ONE_YEAR_TG,
@@ -37,6 +36,8 @@ import {
 } from './auth.consts';
 import { ExperienceService } from '../experience/experience.service';
 import { TaskManagementService } from '../task/services/task-management.service';
+import { TelegramDataDto } from './dto/telegram-data.dto';
+import { TelegramUserDataAnalyze } from './types/telegram-data';
 
 @Injectable()
 export class AuthService {
@@ -57,7 +58,7 @@ export class AuthService {
     private readonly taskManagementService: TaskManagementService,
   ) {}
 
-  async handleTelegramLogin(telegramData: TelegramData) {
+  async handleTelegramLogin(telegramData: TelegramDataDto) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN!;
     const initData = telegramData.initData;
     const userData = telegramData.initDataUnsafe.user;
@@ -192,7 +193,7 @@ export class AuthService {
   }
 
   private async getTelegramUserAnalyze(
-    telegramData: TelegramData,
+    telegramData: TelegramDataDto,
     userId: string,
   ) {
     let analyzeProfile: TelegramUserDataAnalyze | null = null;

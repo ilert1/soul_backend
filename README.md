@@ -63,5 +63,5 @@ $ cd apps/admin && npm run admin:dev
 
 ```bash
 # Запуск e2e и unit тестов
-$ cd apps/backrnd && npm run test:dev
+$ cd apps/backend && npm run test:dev
 ```
