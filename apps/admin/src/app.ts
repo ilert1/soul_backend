@@ -5,6 +5,7 @@ import { prisma } from './config/prisma.client.js';
 import { adminResource } from './resources/admin.resources.js';
 import { generateResources } from './resources/db.resources.js';
 import { Database, Resource } from '@adminjs/prisma';
+import 'dotenv/config';
 
 AdminJS.registerAdapter({ Database, Resource });
 
