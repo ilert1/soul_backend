@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
+  ExperienceType,
   TaskList,
   TaskStatus,
   TaskType,
@@ -15,6 +16,7 @@ import {
 import { TransactionCreateService } from 'src/modules/transaction/transaction-create.service';
 import { TaskProgressService } from './task-progress.service';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
+import { ExperienceService } from 'src/modules/experience/experience.service';
 
 @Injectable()
 export class TaskManagementService {
@@ -22,6 +24,7 @@ export class TaskManagementService {
     private prisma: PrismaService,
     private progressService: TaskProgressService,
     private readonly transactionCreateService: TransactionCreateService,
+    private readonly experienceServise: ExperienceService,
   ) {}
 
   async confirmUserTask(
@@ -35,11 +38,10 @@ export class TaskManagementService {
     });
 
     return await this.prisma.$transaction(async (prisma) => {
-      const existing = await prisma.userTaskProgress.findUnique({
-        where: {
-          userId_taskKey: { userId, taskKey },
-        },
-      });
+      const existing = await this.progressService.getUserProgressUniqueTask(
+        userId,
+        taskKey,
+      );
 
       if (!existing) {
         // если записи нет — создаём новую как COMPLETED
@@ -89,9 +91,6 @@ export class TaskManagementService {
       create: {
         userId,
         taskKey,
-        progress: 0,
-        status: TaskStatus.IN_PROGRESS,
-        completedAt: null,
       },
     });
   }
@@ -281,13 +280,18 @@ export class TaskManagementService {
     userId: string,
     taskKey: TaskList,
   ): Promise<UserTaskProgressResponseDto> {
-    const taskProgress = await this.prisma.userTaskProgress.findUniqueOrThrow({
+    const taskProgress = await this.prisma.userTaskProgress.upsert({
       where: {
         userId_taskKey: {
           userId,
           taskKey,
         },
       },
+      create: {
+        userId,
+        taskKey,
+      },
+      update: {},
       include: { task: { select: { rewardSp: true } } },
     });
 
@@ -321,7 +325,7 @@ export class TaskManagementService {
         throw new InternalServerErrorException('Ошибка при начислении награды');
       }
 
-      return await tx.userTaskProgress.update({
+      const result = await tx.userTaskProgress.update({
         where: {
           userId_taskKey: {
             userId,
@@ -339,6 +343,19 @@ export class TaskManagementService {
           completedAt: true,
         },
       });
+
+      // Добавляем опыт
+      if (
+        result &&
+        Object.values(ExperienceType).includes(taskKey as ExperienceType)
+      ) {
+        await this.experienceServise.addExperience({
+          userId,
+          type: taskKey as ExperienceType,
+        });
+      }
+
+      return result;
     });
   }
 
@@ -360,23 +377,18 @@ export class TaskManagementService {
     // Параллельно проверяем все задачи
     await Promise.all(
       tasks.map(async (task) => {
-        const userTaskProgress = await this.prisma.userTaskProgress.findUnique({
-          where: {
-            userId_taskKey: {
-              userId,
-              taskKey: task.key,
-            },
-          },
-        });
-
-        const currentProgress = userTaskProgress?.progress ?? 0;
+        const userTaskProgress =
+          await this.progressService.getUserProgressUniqueTask(
+            userId,
+            task.key,
+          );
 
         if (actualValue >= task.goal) {
           // Если прогресс совпадает с goal — закрываем задачу
           await this.confirmUserTask(userId, task.key);
         } else {
           // Если прогресс не совпадает с фактическим количеством встреч — корректируем
-          const diff = actualValue - currentProgress;
+          const diff = actualValue - userTaskProgress.progress;
 
           if (diff !== 0) {
             await this.progressService.updateTaskProgress(
@@ -396,7 +408,7 @@ export class TaskManagementService {
         infinityTaskKey,
       );
 
-    const diff = actualValue - (infiniteTaskProgress.progress ?? 0);
+    const diff = actualValue - infiniteTaskProgress.progress;
 
     if (diff !== 0) {
       return this.progressService.updateTaskProgress(

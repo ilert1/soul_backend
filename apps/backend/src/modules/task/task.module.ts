@@ -14,6 +14,7 @@ import { AppLoggerService } from '../logger/logger.service';
 import { TaskWeeklyService } from './services/task-weekly.service';
 import { TaskWeeklyController } from './controllers/task-weekly.controller';
 import { WeeklyTaskResetService } from './services/task-weekly-reset-schedule.service';
+import { ExperienceService } from '../experience/experience.service';
 
 @Module({
   imports: [PrismaModule, WalletModule],
@@ -33,6 +34,7 @@ import { WeeklyTaskResetService } from './services/task-weekly-reset-schedule.se
     TransactionCreateService,
     AppLoggerService,
     WeeklyTaskResetService,
+    ExperienceService,
   ],
   exports: [TaskManagementService],
 })
