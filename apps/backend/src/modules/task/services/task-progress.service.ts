@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TaskList, TaskStatus, TaskType } from '@prisma/client';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
@@ -27,6 +27,11 @@ export class TaskProgressService {
     userId: string,
     type: TaskType,
   ): Promise<UserTaskProgressResponseDto[]> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskType
+    if (!Object.values(TaskType).includes(type)) {
+      throw new BadRequestException('Невалидный тип заданий');
+    }
+
     // Получаем список ключей задач с нужным типом
     const taskTypeKeys = await this.prisma.task.findMany({
       where: {
@@ -63,7 +68,22 @@ export class TaskProgressService {
     userId: string,
     taskKey: TaskList,
   ): Promise<UserTaskProgressResponseDto> {
-    return await this.prisma.userTaskProgress.upsert({
+    // Проверяем, что переданный параметр является допустимым значением из TaskList
+    if (!Object.values(TaskList).includes(taskKey)) {
+      throw new BadRequestException('Невалидный ключ задания');
+    }
+
+    // Проверяем, что пользователь существует
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      throw new BadRequestException('Пользователь не найден');
+    }
+
+    const progress = await this.prisma.userTaskProgress.upsert({
       where: {
         userId_taskKey: {
           userId,
@@ -85,6 +105,12 @@ export class TaskProgressService {
         completedAt: true,
       },
     });
+
+    if (!progress) {
+      throw new BadRequestException('Ошибка получения прогресса');
+    }
+
+    return progress;
   }
 
   async updateTaskProgress(
@@ -96,51 +122,36 @@ export class TaskProgressService {
       where: { key: taskKey },
     });
 
-    const existingProgress = await this.prisma.userTaskProgress.findUnique({
-      where: {
-        userId_taskKey: {
-          userId,
-          taskKey,
-        },
-      },
-    });
+    const existingProgress = await this.getUserProgressUniqueTask(
+      userId,
+      taskKey,
+    );
 
     // Если задача уже не в статусе IN_PROGRESS — больше апдейтить нельзя
-    if (
-      existingProgress?.status &&
-      existingProgress.status !== TaskStatus.IN_PROGRESS
-    ) {
+    if (existingProgress.status !== TaskStatus.IN_PROGRESS) {
       return existingProgress;
     }
 
-    let newProgress: number =
-      (existingProgress?.progress ?? 0) + progressIncrement;
-    let status: TaskStatus = TaskStatus.IN_PROGRESS;
+    let newProgress: number = existingProgress.progress + progressIncrement;
+    let newStatus: TaskStatus = TaskStatus.IN_PROGRESS;
     let completedAt: Date | null = null;
 
     if (task.goal !== 0 && newProgress >= task.goal) {
-      status = TaskStatus.COMPLETED;
+      newStatus = TaskStatus.COMPLETED;
       completedAt = new Date();
       newProgress = task.goal; // не больше чем goal
     }
 
-    return await this.prisma.userTaskProgress.upsert({
+    return await this.prisma.userTaskProgress.update({
       where: {
         userId_taskKey: {
           userId,
           taskKey,
         },
       },
-      create: {
-        userId,
-        taskKey,
+      data: {
         progress: newProgress,
-        status,
-        completedAt,
-      },
-      update: {
-        progress: newProgress,
-        status: status,
+        status: newStatus,
         completedAt,
       },
     });

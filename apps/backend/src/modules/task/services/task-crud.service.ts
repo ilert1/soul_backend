@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TaskResponseDto } from '../dto/task-response.dto';
 import { TaskType } from '@prisma/client';
@@ -8,6 +8,11 @@ export class TaskCrudService {
   constructor(private prisma: PrismaService) {}
 
   async getAllTasks(type?: TaskType): Promise<TaskResponseDto[]> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskType
+    if (type && !Object.values(TaskType).includes(type)) {
+      throw new BadRequestException('Невалидный тип задания');
+    }
+
     const whereCondition = type
       ? { type, goal: { gt: 0 } }
       : { goal: { gt: 0 } };

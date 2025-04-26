@@ -123,6 +123,7 @@ describe('TaskController (e2e)', () => {
 
       assert.ok(response.body.id, 'id не вернулся');
       assert.equal(response.body.userId, userId);
+      assert.equal(response.body.taskKey, TaskList.CREATED_FIRST_MEETING);
     });
 
     it('| - | — несуществующий ключ', async () => {

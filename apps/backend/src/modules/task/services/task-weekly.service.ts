@@ -3,10 +3,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TaskList, TaskStatus } from '@prisma/client';
 import { mainTaskToSubTasks, subTaskToMainTask } from '../task.constants';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
+import { TaskProgressService } from './task-progress.service';
 
 @Injectable()
 export class TaskWeeklyService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private progressService: TaskProgressService,
+  ) {}
 
   async confirmWeeklyUserTask(
     userId: string,
@@ -17,19 +21,7 @@ export class TaskWeeklyService {
     // Если это подзадача
     if (mainTaskKey) {
       let subTaskProgress =
-        await this.prisma.userTaskProgress.findUniqueOrThrow({
-          where: { userId_taskKey: { userId, taskKey } },
-        });
-
-      // если задача ещё не создана — создаём
-      if (!subTaskProgress) {
-        subTaskProgress = await this.prisma.userTaskProgress.create({
-          data: {
-            userId,
-            taskKey,
-          },
-        });
-      }
+        await this.progressService.getUserProgressUniqueTask(userId, taskKey);
 
       // если статус IN_PROGRESS — завершаем подзадачу
       if (subTaskProgress.status === TaskStatus.IN_PROGRESS) {
@@ -139,9 +131,7 @@ export class TaskWeeklyService {
       });
 
       let mainTaskProgress =
-        await this.prisma.userTaskProgress.findUniqueOrThrow({
-          where: { userId_taskKey: { userId, taskKey } },
-        });
+        await this.progressService.getUserProgressUniqueTask(userId, taskKey);
 
       if (allSubTasksCompleted) {
         // если все подзадачи выполнены - завершаем главную
