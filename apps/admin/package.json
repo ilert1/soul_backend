@@ -9,7 +9,7 @@
   "scripts": {
     "admin:build": "npx tsc",
     "admin:start": "node dist/app.js",
-    "admin:dev": "npm run admin:build && npm run admin:start ",
+    "admin:dev": "nodemon --watch src --ext ts,js --exec \"npm run admin:build && npm run admin:start\"",
     "admin:debug": "npm run admin:build && npm run admin:start --inspect "
   },
   "dependencies": {
@@ -17,6 +17,7 @@
     "@adminjs/prisma": "^5.0.3",
     "@prisma/client": "^5.22.0",
     "adminjs": "^7.8.15",
+    "argon2": "^0.43.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "prisma": "^6.6.0"
@@ -29,6 +30,7 @@
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
     "globals": "^16.0.0",
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1"
