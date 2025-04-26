@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
+  ExperienceType,
   TaskList,
   TaskStatus,
   TaskType,
@@ -15,6 +16,8 @@ import {
 import { TransactionCreateService } from 'src/modules/transaction/transaction-create.service';
 import { TaskProgressService } from './task-progress.service';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
+import { ExperienceService } from 'src/modules/experience/experience.service';
+import { experiencePoints } from 'src/modules/experience/dto/constants';
 
 @Injectable()
 export class TaskManagementService {
@@ -22,6 +25,7 @@ export class TaskManagementService {
     private prisma: PrismaService,
     private progressService: TaskProgressService,
     private readonly transactionCreateService: TransactionCreateService,
+    private readonly experienceServise: ExperienceService,
   ) {}
 
   async confirmUserTask(
@@ -322,7 +326,7 @@ export class TaskManagementService {
         throw new InternalServerErrorException('Ошибка при начислении награды');
       }
 
-      return await tx.userTaskProgress.update({
+      const result = await tx.userTaskProgress.update({
         where: {
           userId_taskKey: {
             userId,
@@ -340,6 +344,19 @@ export class TaskManagementService {
           completedAt: true,
         },
       });
+
+      // Добавляем опыт
+      if (
+        result &&
+        Object.values(ExperienceType).includes(taskKey as ExperienceType)
+      ) {
+        await this.experienceServise.addExperience({
+          userId,
+          type: taskKey as ExperienceType,
+        });
+      }
+
+      return result;
     });
   }
 
