@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -52,6 +52,11 @@ export class TaskProgressController {
     @User() user: UserPayload,
     @Param('taskType') taskType: TaskType,
   ): Promise<UserTaskProgressResponseDto[]> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskType
+    if (!Object.values(TaskType).includes(taskType)) {
+      throw new BadRequestException('Невалидный тип заданий');
+    }
+
     return this.taskService.getUserTaskTypeProgress(user.id, taskType);
   }
 
@@ -72,6 +77,11 @@ export class TaskProgressController {
     @User() user: UserPayload,
     @Param('taskKey') taskKey: TaskList,
   ): Promise<UserTaskProgressResponseDto> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskList
+    if (!Object.values(TaskList).includes(taskKey)) {
+      throw new BadRequestException('Невалидный ключ задания');
+    }
+
     return this.taskService.getUserProgressUniqueTask(user.id, taskKey);
   }
 }

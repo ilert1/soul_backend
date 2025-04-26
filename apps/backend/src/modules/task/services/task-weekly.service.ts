@@ -16,9 +16,10 @@ export class TaskWeeklyService {
 
     // Если это подзадача
     if (mainTaskKey) {
-      let subTaskProgress = await this.prisma.userTaskProgress.findUnique({
-        where: { userId_taskKey: { userId, taskKey } },
-      });
+      let subTaskProgress =
+        await this.prisma.userTaskProgress.findUniqueOrThrow({
+          where: { userId_taskKey: { userId, taskKey } },
+        });
 
       // если задача ещё не создана — создаём
       if (!subTaskProgress) {
@@ -137,9 +138,10 @@ export class TaskWeeklyService {
         select: { goal: true },
       });
 
-      let mainTaskProgress = await this.prisma.userTaskProgress.findUnique({
-        where: { userId_taskKey: { userId, taskKey } },
-      });
+      let mainTaskProgress =
+        await this.prisma.userTaskProgress.findUniqueOrThrow({
+          where: { userId_taskKey: { userId, taskKey } },
+        });
 
       if (allSubTasksCompleted) {
         // если все подзадачи выполнены - завершаем главную

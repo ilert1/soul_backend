@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -47,6 +47,11 @@ export class TaskCrudController {
   async getTrainingTasks(
     @Param('taskType') taskType: TaskType,
   ): Promise<TaskResponseDto[]> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskType
+    if (!Object.values(TaskType).includes(taskType)) {
+      throw new BadRequestException('Невалидный тип задания');
+    }
+
     return this.taskService.getAllTasks(taskType);
   }
 }
