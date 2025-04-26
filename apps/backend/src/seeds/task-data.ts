@@ -223,7 +223,7 @@ export const tasks = [
     type: TaskType.SECTION_FRIENDS,
     title: 'Пригласите 5 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
-    goal: 1,
+    goal: 5,
     rewardSp: 200,
   },
   {
@@ -231,7 +231,7 @@ export const tasks = [
     type: TaskType.SECTION_FRIENDS,
     title: 'Пригласите 10 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
-    goal: 1,
+    goal: 10,
     rewardSp: 200,
   },
   {
@@ -239,7 +239,7 @@ export const tasks = [
     type: TaskType.SECTION_FRIENDS,
     title: 'Пригласите 20 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
-    goal: 1,
+    goal: 20,
     rewardSp: 200,
   },
   {
@@ -247,7 +247,7 @@ export const tasks = [
     type: TaskType.SECTION_FRIENDS,
     title: 'Пригласите 50 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
-    goal: 1,
+    goal: 50,
     rewardSp: 200,
   },
   {
@@ -255,7 +255,7 @@ export const tasks = [
     type: TaskType.SECTION_FRIENDS,
     title: 'Пригласите 100 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
-    goal: 1,
+    goal: 100,
     rewardSp: 200,
   },
   {
