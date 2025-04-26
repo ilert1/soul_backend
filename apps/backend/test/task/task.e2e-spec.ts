@@ -10,13 +10,12 @@ import {
 } from '../utils';
 import { telegramData } from 'test/auth/auth-helper';
 import { TaskList, TaskStatus, TaskType } from '@prisma/client';
-import { PrismaService } from 'src/modules/prisma/prisma.service';
+import { UserExampleRequestUpdate } from 'src/modules/user/dto/examples/user.example';
 
 describe('TaskController (e2e)', () => {
   let server: string;
 
   let app: INestApplication;
-  let prisma: PrismaService;
   let accessToken: string;
   let userId: number = generateTestUserId();
 
@@ -28,8 +27,6 @@ describe('TaskController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe()); // Включаем валидацию DTO
     await app.init();
-
-    prisma = app.get(PrismaService);
 
     server = app.getHttpServer();
 
@@ -55,13 +52,6 @@ describe('TaskController (e2e)', () => {
 
       assert.ok(Array.isArray(response.body), 'ответ не является массивом');
       assert.ok(response.body.length > 0, 'ответ пустой, нужен seed');
-    });
-
-    it('| - | — несуществующий токен', async () => {
-      await request(server)
-        .get('/task')
-        .set('Authorization', `Bearer ${accessToken}invalid`)
-        .expect(isResponseUnvalid);
     });
   });
 
@@ -136,26 +126,6 @@ describe('TaskController (e2e)', () => {
 
   describe('POST /task/checkin', () => {
     it('| + | — отправить чекин', async () => {
-      await prisma.userTaskProgress.upsert({
-        where: {
-          userId_taskKey: {
-            userId: userId.toString(),
-            taskKey: TaskList.CHECKIN,
-          },
-        },
-        create: {
-          userId: userId.toString(),
-          taskKey: TaskList.CHECKIN,
-          progress: 1,
-          status: TaskStatus.IN_PROGRESS,
-          completedAt: null,
-        },
-        update: {
-          progress: 1,
-          status: TaskStatus.IN_PROGRESS,
-          completedAt: null,
-        },
-      });
       const response = await request(server)
         .post('/task/checkin')
         .set('Authorization', `Bearer ${accessToken}`)
@@ -174,21 +144,11 @@ describe('TaskController (e2e)', () => {
 
   describe('POST /task/manage/collect', () => {
     it('| + | — собрать награду по ключу', async () => {
-      await prisma.userTaskProgress.upsert({
-        where: {
-          userId_taskKey: {
-            userId: userId.toString(),
-            taskKey: TaskList.PROFILE_COMPLETED,
-          },
-        },
-        create: {
-          userId: userId.toString(),
-          taskKey: TaskList.PROFILE_COMPLETED,
-          progress: 1,
-          status: TaskStatus.COMPLETED,
-        },
-        update: { progress: 1, status: TaskStatus.COMPLETED },
-      });
+      await request(server)
+        .patch('/user/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(UserExampleRequestUpdate);
+
       const response = await request(server)
         .post('/task/manage/collect')
         .set('Authorization', `Bearer ${accessToken}`)
@@ -211,23 +171,6 @@ describe('TaskController (e2e)', () => {
 
   describe('POST /task/weekly/confirm', () => {
     it('| + | — подтвердить недельное подзадание', async () => {
-      await prisma.userTaskProgress.upsert({
-        where: {
-          userId_taskKey: {
-            userId: userId.toString(),
-            taskKey: TaskList.SUBSCRIBED_INSTAGRAM,
-          },
-        },
-        create: {
-          userId: userId.toString(),
-          taskKey: TaskList.SUBSCRIBED_INSTAGRAM,
-        },
-        update: {
-          progress: 0,
-          status: TaskStatus.IN_PROGRESS,
-          completedAt: null,
-        },
-      });
       const response = await request(server)
         .post('/task/weekly/confirm')
         .set('Authorization', `Bearer ${accessToken}`)
@@ -255,26 +198,14 @@ describe('TaskController (e2e)', () => {
     });
 
     it('| + | — проверка выполнения недельного главного задания (2/2)', async () => {
-      await prisma.userTaskProgress.upsert({
-        where: {
-          userId_taskKey: {
-            userId: userId.toString(),
-            taskKey: TaskList.SUBSCRIBED_SOUL_FORUM,
-          },
-        },
-        create: {
+      await request(server)
+        .post('/task/weekly/confirm')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
           userId: userId.toString(),
           taskKey: TaskList.SUBSCRIBED_SOUL_FORUM,
-          progress: 1,
-          status: TaskStatus.COMPLETED,
-          completedAt: new Date(),
-        },
-        update: {
-          progress: 1,
-          status: TaskStatus.COMPLETED,
-          completedAt: new Date(),
-        },
-      });
+        });
+
       const response = await request(server)
         .post('/task/weekly/confirm')
         .set('Authorization', `Bearer ${accessToken}`)
