@@ -17,7 +17,6 @@ import { TransactionCreateService } from 'src/modules/transaction/transaction-cr
 import { TaskProgressService } from './task-progress.service';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
 import { ExperienceService } from 'src/modules/experience/experience.service';
-import { experiencePoints } from 'src/modules/experience/dto/constants';
 
 @Injectable()
 export class TaskManagementService {
