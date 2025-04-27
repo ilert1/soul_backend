@@ -9,7 +9,6 @@ import {
 import { AuthService } from './auth.service';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
 import { Public } from './decorators/public.decorator';
-import { TelegramData } from './types/telegram-data';
 import {
   ApiBody,
   ApiHeader,
@@ -69,7 +68,7 @@ export class AuthController {
       },
     },
   })
-  async telegramLogin(@Body() telegramData: TelegramData) {
+  async telegramLogin(@Body() telegramData: TelegramDataDto) {
     return await this.authService.handleTelegramLogin(telegramData);
   }
 
