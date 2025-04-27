@@ -3,9 +3,5 @@
   "workspaces": [
     "api",
     "admin"
-  ],
-  "dependencies": {
-    "@grammyjs/runner": "^2.0.3",
-    "nestjs-i18n": "^10.5.1"
-  }
+  ]
 }
