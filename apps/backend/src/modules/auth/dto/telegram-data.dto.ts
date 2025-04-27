@@ -1,12 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDefined,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
 
 export class UserDataDto {
@@ -14,9 +17,9 @@ export class UserDataDto {
     example: '123456789',
     description: 'Идентификатор пользователя',
   })
-  @IsString()
   @IsNotEmpty()
-  id: string;
+  @IsDefined()
+  id: string | number;
 
   @ApiProperty({
     example: 'johndoe',
@@ -83,7 +86,7 @@ export class ChatDataDto {
   @ApiProperty({ example: 123456789, description: 'Идентификатор чата' })
   @IsInt()
   @IsPositive()
-  @IsNotEmpty()
+  @IsDefined()
   id: number;
 
   @ApiProperty({ example: 'My Chat', description: 'Название чата' })
@@ -119,15 +122,20 @@ export class InitDataUnsafeDto {
     description: 'Идентификатор запроса',
   })
   @IsUUID()
+  @IsDefined()
   @IsNotEmpty()
   queryId: string;
 
   @ApiProperty({ description: 'Данные пользователя' })
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => UserDataDto)
   user: UserDataDto;
 
   @ApiProperty({ description: 'Данные чата' })
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => ChatDataDto)
   chat: ChatDataDto;
 
   @ApiProperty({ example: 'group', description: 'Тип чата' })
@@ -195,6 +203,8 @@ export class TelegramDataDto {
 
   @ApiProperty({ description: 'Днные инициализации' })
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => InitDataUnsafeDto)
   initDataUnsafe: InitDataUnsafeDto;
 
   @ApiProperty({

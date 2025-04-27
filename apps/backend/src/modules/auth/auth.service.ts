@@ -85,10 +85,6 @@ export class AuthService {
       throw new BadRequestException('Неверные данные Telegram');
     }
 
-    if (!userData.id) {
-      throw new BadRequestException('Telegram ID не валиден');
-    }
-
     // Поиск или создание TelegramUser
     let telegramUser = await this.prisma.telegramUser.findUnique({
       where: { telegramId: userData.id.toString() },
