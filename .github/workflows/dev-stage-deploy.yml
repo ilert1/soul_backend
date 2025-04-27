@@ -50,7 +50,7 @@ jobs:
             cd apps/backend && \
             npx prisma generate && \
             cd ../.. && \
-            docker compose -f docker-compose.deploy.yml up -d --build \
+            docker compose -f docker-compose.deploy.yml up -d --build && \
             docker image prune -a -f
           EOF
         env:
