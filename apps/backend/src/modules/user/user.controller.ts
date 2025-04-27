@@ -27,6 +27,8 @@ import { TransformFieldInterceptor } from 'src/common/interceptors/transform-fie
 import { User } from 'src/common/decorators/current-user.decorator';
 import { UserPayload } from 'src/common/types/user-payload.dto';
 import { UserGlobalResponseDto } from './dto/response-user.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginatedResult } from 'src/common/types/paginarted-result';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -117,8 +119,8 @@ export class UserController {
   @TransformField({ '': UserResponseDto })
   async getUsersByEventId(
     @Param('eventId') eventId: string,
-  ): Promise<UserResponseDto[] | null> {
-    return await this.userService.findUsersByEventId(eventId);
+  ): Promise<PaginatedResult<UserResponseDto[] | null>> {
+    return await this.userService.findUsersByEventId({ limit, page }, eventId);
   }
 
   @Patch('ban/:id')

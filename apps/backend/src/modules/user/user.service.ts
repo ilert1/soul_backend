@@ -7,6 +7,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/pagination.utils';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TaskManagementService } from '../task/services/task-management.service';
+import { PaginatedResult } from 'src/common/types/paginarted-result';
 
 @Injectable()
 export class UserService {
@@ -142,15 +143,63 @@ export class UserService {
     return await tx.user.create({ data });
   }
 
-  async findUsersByEventId(eventId: string): Promise<UserResponseDto[] | null> {
-    await this.prisma.event.findUniqueOrThrow({
+  async findUsersByEventId(
+    paginationDto: { page: number; limit: number },
+    eventId: string,
+  ): Promise<PaginatedResult<UserResponseDto[] | null>> {
+    const event = await this.prisma.event.findUniqueOrThrow({
       where: { id: eventId, isArchived: false },
+      include: {
+        wallet: true,
+        activities: {
+          select: { userId: true },
+        },
+      },
     });
 
-    return await this.prisma.user.findMany({
+    const currentDate = new Date();
+    const users = await this.prisma.user.findMany({
       where: { activities: { some: { eventId } } },
-      include: { avatarImage: true },
+      include: {
+        activities: {
+          where: { eventId: eventId },
+        },
+        avatarImage: true,
+      },
     });
+
+    // Сортировка
+    if (event.finishDate < currentDate) {
+      // Сортировка по дате записи на мероприятие (activity.createdAt)
+      return users.sort((a, b) => {
+        return (
+          a.activities[0].joinedAt.getTime() -
+          b.activities[0].joinedAt.getTime()
+        );
+      });
+    } else {
+      // Сортировка по наличию receivedPoints и дате isConfirmedAt
+      return users.sort((a, b) => {
+        const aActivity = a.activities[0];
+        const bActivity = b.activities[0];
+
+        const aReceivedPoints = aActivity.receivedPoints ? 1 : 0;
+        const bReceivedPoints = bActivity.receivedPoints ? 1 : 0;
+
+        if (aReceivedPoints !== bReceivedPoints) {
+          return bReceivedPoints - aReceivedPoints; // Сначала с заполненным
+        }
+
+        const aDate = aActivity.isConfirmedAt
+          ? aActivity.isConfirmedAt.getTime()
+          : Infinity;
+        const bDate = bActivity.isConfirmedAt
+          ? bActivity.isConfirmedAt.getTime()
+          : Infinity;
+
+        return aDate - bDate;
+      });
+    }
   }
 
   async findUserByActivityId(
