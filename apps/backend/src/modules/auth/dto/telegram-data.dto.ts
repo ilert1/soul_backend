@@ -2,13 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsDefined,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
-  IsUUID,
   ValidateNested,
 } from 'class-validator';
 
@@ -121,10 +121,8 @@ export class InitDataUnsafeDto {
     example: 'AAHdF6IQAAAAAN0XohDhrB8b',
     description: 'Идентификатор запроса',
   })
-  @IsUUID()
-  @IsDefined()
-  @IsNotEmpty()
-  queryId: string;
+  @IsOptional()
+  queryId?: string;
 
   @ApiProperty({ description: 'Данные пользователя' })
   @IsNotEmpty()
@@ -133,7 +131,7 @@ export class InitDataUnsafeDto {
   user: UserDataDto;
 
   @ApiProperty({ description: 'Данные чата' })
-  @IsNotEmpty()
+  @IsOptional()
   @ValidateNested()
   @Type(() => ChatDataDto)
   chat: ChatDataDto;
@@ -169,13 +167,12 @@ export class InitDataUnsafeDto {
   canSendAfter?: number;
 
   @ApiProperty({
-    example: 1600000000,
+    example: '2025-04-27T18:25:07.000Z',
     description: 'Дата аутентификации (Unix timestamp)',
   })
-  @IsInt()
-  @IsPositive()
-  @IsNotEmpty()
-  authDate: number;
+  @IsDateString()
+  @IsOptional()
+  authDate: string;
 
   @ApiProperty({
     example: 'abc123def456',
@@ -189,6 +186,14 @@ export class InitDataUnsafeDto {
   @IsBoolean()
   @IsOptional()
   isBot?: boolean;
+
+  @ApiProperty({
+    example:
+      'CBHtpAUvS0o94GsZ4iv1qIQTmjm9RAmx89_jeuKkw3Xrxa_JKqGJ-SFoHKiEaLah7n9KldjXUuwXVuj',
+    description: 'Подпись',
+  })
+  @IsString()
+  signature: string;
 }
 
 export class TelegramDataDto {
