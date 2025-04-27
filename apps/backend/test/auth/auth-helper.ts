@@ -1,11 +1,11 @@
-import { TelegramData } from 'src/modules/auth/types/telegram-data';
+import { TelegramDataDto } from 'src/modules/auth/dto/telegram-data.dto';
 import { generateTestUserId } from 'test/utils';
 import { v4 as uuid } from 'uuid';
 
 const userId = generateTestUserId();
 const chatId = userId + 1000000;
 
-export const telegramData: TelegramData = {
+export const telegramData: TelegramDataDto = {
   initData: 'mockedInitData',
   initDataUnsafe: {
     queryId: uuid(),

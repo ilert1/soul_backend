@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js locally
         uses: actions/setup-node@v3
         with:
-          node-version: '21'
+          node-version: "21"
 
       - name: Install & build backend locally
         working-directory: apps/backend
@@ -50,7 +50,8 @@ jobs:
             cd apps/backend && \
             npx prisma generate && \
             cd ../.. && \
-            docker compose -f docker-compose.deploy.yml up -d --build
+            docker compose -f docker-compose.deploy.yml up -d --build && \
+            docker image prune -a -f
           EOF
         env:
           DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}
