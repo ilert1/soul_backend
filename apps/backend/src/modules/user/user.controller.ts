@@ -5,6 +5,7 @@ import {
   Patch,
   Param,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import {
   UserExampleRequestUpdate,
@@ -27,8 +29,8 @@ import { TransformFieldInterceptor } from 'src/common/interceptors/transform-fie
 import { User } from 'src/common/decorators/current-user.decorator';
 import { UserPayload } from 'src/common/types/user-payload.dto';
 import { UserGlobalResponseDto } from './dto/response-user.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PaginatedResult } from 'src/common/types/paginarted-result';
+import { DEFAULT_PAGE_SIZE } from 'src/common/utils/constants';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -110,6 +112,18 @@ export class UserController {
     required: true,
     description: 'Данные для получения всех пользователей по id события',
   })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Количество записей',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Номер страницы',
+    example: 1,
+  })
   @ApiResponse({
     status: 200,
     description: 'Список пользователей, связанных с событием',
@@ -119,7 +133,9 @@ export class UserController {
   @TransformField({ '': UserResponseDto })
   async getUsersByEventId(
     @Param('eventId') eventId: string,
-  ): Promise<PaginatedResult<UserResponseDto[] | null>> {
+    @Query('limit') limit: number = DEFAULT_PAGE_SIZE,
+    @Query('page') page: number = 1,
+  ): Promise<PaginatedResult<UserResponseDto | null>> {
     return await this.userService.findUsersByEventId({ limit, page }, eventId);
   }
 

@@ -5,7 +5,10 @@ import { Prisma, TaskList, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/pagination.utils';
-import { UserResponseDto } from './dto/user-response.dto';
+import {
+  ActivityWithUserResponseDto,
+  UserResponseDto,
+} from './dto/user-response.dto';
 import { TaskManagementService } from '../task/services/task-management.service';
 import { PaginatedResult } from 'src/common/types/paginarted-result';
 
@@ -146,60 +149,45 @@ export class UserService {
   async findUsersByEventId(
     paginationDto: { page: number; limit: number },
     eventId: string,
-  ): Promise<PaginatedResult<UserResponseDto[] | null>> {
+  ): Promise<PaginatedResult<UserResponseDto | null>> {
     const event = await this.prisma.event.findUniqueOrThrow({
       where: { id: eventId, isArchived: false },
-      include: {
-        wallet: true,
-        activities: {
-          select: { userId: true },
-        },
-      },
     });
 
     const currentDate = new Date();
-    const users = await this.prisma.user.findMany({
-      where: { activities: { some: { eventId } } },
-      include: {
-        activities: {
-          where: { eventId: eventId },
+
+    const res = await paginate<ActivityWithUserResponseDto>({
+      prisma: this.prisma,
+      model: 'activity',
+      paginationDto,
+      options: {
+        where:
+          event.finishDate > currentDate
+            ? { eventId: eventId }
+            : {
+                eventId: eventId,
+                isConfirmedAt: {
+                  not: null,
+                },
+              },
+        order:
+          event.finishDate > currentDate
+            ? { joinedAt: 'asc' } // Сортировка по дате записи на мероприятие
+            : [
+                { receivedPoints: 'asc' }, // Сначала те, у кого есть баллы
+                { isConfirmedAt: 'asc' }, // Затем по дате "обилечивания"
+              ],
+        include: {
+          user: {
+            include: {
+              avatarImage: true,
+            },
+          },
         },
-        avatarImage: true,
       },
     });
 
-    // Сортировка
-    if (event.finishDate < currentDate) {
-      // Сортировка по дате записи на мероприятие (activity.createdAt)
-      return users.sort((a, b) => {
-        return (
-          a.activities[0].joinedAt.getTime() -
-          b.activities[0].joinedAt.getTime()
-        );
-      });
-    } else {
-      // Сортировка по наличию receivedPoints и дате isConfirmedAt
-      return users.sort((a, b) => {
-        const aActivity = a.activities[0];
-        const bActivity = b.activities[0];
-
-        const aReceivedPoints = aActivity.receivedPoints ? 1 : 0;
-        const bReceivedPoints = bActivity.receivedPoints ? 1 : 0;
-
-        if (aReceivedPoints !== bReceivedPoints) {
-          return bReceivedPoints - aReceivedPoints; // Сначала с заполненным
-        }
-
-        const aDate = aActivity.isConfirmedAt
-          ? aActivity.isConfirmedAt.getTime()
-          : Infinity;
-        const bDate = bActivity.isConfirmedAt
-          ? bActivity.isConfirmedAt.getTime()
-          : Infinity;
-
-        return aDate - bDate;
-      });
-    }
+    return { ...res, items: res.items.map((item) => item.user) };
   }
 
   async findUserByActivityId(
