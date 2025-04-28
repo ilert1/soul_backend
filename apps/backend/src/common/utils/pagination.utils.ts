@@ -14,9 +14,7 @@ interface PaginationOptions<T> {
   excludeFields?: string[];
   where?: Record<string, any>;
   select?: Record<string, any>;
-  order?:
-    | Record<string, 'asc' | 'desc'>
-    | Array<{ [key: string]: 'asc' | 'desc' }>;
+  order?: Record<string, 'asc' | 'desc'> | Record<string, 'asc' | 'desc'>[];
   searchQuery?: string;
   searchFields?: (keyof T)[];
 }
@@ -52,25 +50,12 @@ export async function paginate<T>({
     }));
   }
 
-  // Преобразуем order в нужный формат
-  let orderBy: { [key: string]: 'asc' | 'desc' }[] | undefined;
-
-  if (Array.isArray(order)) {
-    orderBy = order.map((item) => {
-      const key = Object.keys(item)[0];
-
-      return { [key]: item[key] };
-    });
-  } else if (order) {
-    orderBy = [order];
-  }
-
   const [items, total] = await Promise.all([
     prisma[model].findMany({
       skip,
       take,
       where: finalWhere,
-      orderBy: orderBy,
+      orderBy: order,
       include,
       select,
     }),
