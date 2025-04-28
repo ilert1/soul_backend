@@ -54,14 +54,14 @@ jobs:
             cd /home/soul_backend/backend && \
             git pull origin dev && \
             cd apps/backend && \
-            npx prisma generate &&  \                                                     #создать /.prisma/client для админки и бэка
-            npm run build && \                                                            #билд бэка
+            npx prisma generate &&  \                                                    
+            npm run build && \                                                            
             cd ../admin && \
-            npm run admin:build && \                                                      #билд админки
+            npm run admin:build && \                                                     
             cd ..  && \
-            docker compose -f docker-compose.deploy.yml up -d db && \                     #запустить бд если на запущена
-            docker compose -f docker-compose.deploy.yml run --rm migrate && \             #провести миграции и сидирование
-            docker compose -f docker-compose.deploy.yml up -d --build backend admin && \  #собрать новые контейнеры админки и бэка
+            docker compose -f docker-compose.deploy.yml up -d db && \                    
+            docker compose -f docker-compose.deploy.yml run --rm migrate && \             
+            docker compose -f docker-compose.deploy.yml up -d --build backend admin && \  
             docker image prune -a -f
           EOF
         env:
