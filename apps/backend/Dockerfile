@@ -4,10 +4,15 @@ WORKDIR /backend
 
 RUN apt-get update -y && apt-get install -y openssl
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 
-RUN npm i
+RUN  npm ci --only=production
 
-COPY . .
+COPY prisma/ ./prisma/
+COPY node_modules/.prisma ./node_modules/.prisma
+COPY nest-cli.json ./
+COPY dist/ ./dist/
+COPY .env ./
+COPY tsconfig.json ./
 
-CMD ["sh", "-c", "set -e; npm run start"]
+CMD ["sh", "-c", "set -e; node dist/main.js"]

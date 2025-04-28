@@ -4,10 +4,14 @@ WORKDIR /admin
 
 RUN apt-get update -y && apt-get install -y openssl
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 
-RUN npm i
+RUN  npm ci --only=production
 
-COPY . .
+COPY node_modules/.prisma/client ./node_modules/.prisma/client
+COPY dist/ ./dist/
+COPY .env ./
+COPY tsconfig.json ./
+
 
 CMD ["sh", "-c", "set -e; npm run admin:start"]
