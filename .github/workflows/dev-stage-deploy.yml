@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - dev
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Commit SHA to deploy"
+        required: true
+        default: "latest"
 
 jobs:
   deploy:
@@ -48,8 +54,11 @@ jobs:
             cd /home/soul_backend/backend && \
             git pull origin dev && \
             cd apps/backend && \
-            npx prisma generate && \
-            cd ../.. && \
+            npx prisma generate &&  \
+            npm run build && \
+            cd ../admin && \
+            npm run admin:build && \
+            cd ../  && \
             docker compose -f docker-compose.deploy.yml up -d --build && \
             docker image prune -a -f
           EOF

@@ -2,3 +2,4 @@
 .prettierrc
 eslint.config.mjs
 .env.example
+src

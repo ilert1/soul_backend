@@ -1,34 +1,19 @@
-version: "3.8"
-
 services:
-  db:
-    image: postgres:15
-    restart: always
-    container_name: db
+  migrate:
+    build: ./apps/backend
+    restart: "no"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-soul-api}
-      POSTGRES_USER: ${POSTGRES_USER:-soul-api}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soul-api}
-    ports:
-      - "5434:5432"
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-soul-api}
+      - DB_PASSWORD=${DB_PASSWORD:-soul-api}
+      - DB_NAME=${DB_NAME:-soul-api}
+    command: "cd apps/backend && npx prisma migrate deploy && npx prisma db seed"
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - backend-net
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready",
-          "-U",
-          "${POSTGRES_USER:-soul-api}",
-          "-d",
-          "${POSTGRES_DB:-soul-api}",
-        ]
-      interval: 10s
-      retries: 5
-      start_period: 10s
-      timeout: 5s
 
   backend:
     build: ./apps/backend
@@ -55,4 +40,6 @@ services:
 
 networks:
   backend-net:
+    name: backend-net
+    external: true
     driver: bridge
