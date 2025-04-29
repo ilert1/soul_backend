@@ -22,8 +22,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    await this.initializeClient();
-
     if (process.env.BOT_ACITVE === 'false') return;
 
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN ?? '');
@@ -184,6 +182,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getTgUserAbout(telegramId: string): Promise<string> {
+    if (!this.client) {
+      await this.initializeClient();
+    }
+
     if (!this.isConnected) {
       await this.client.connect();
     }
