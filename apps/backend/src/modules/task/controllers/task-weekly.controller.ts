@@ -17,8 +17,8 @@ import { TaskExamples } from '../examples/task-examples';
 export class TaskWeeklyController {
   constructor(private readonly taskService: TaskWeeklyService) {}
 
-  @Post('confirm')
-  @ApiOperation({ summary: 'Подтвердить недельное задание' })
+  @Post('check')
+  @ApiOperation({ summary: 'Проверить недельное задание' })
   @ApiBody({
     description: 'Данные для подтверждения',
     examples: {
@@ -26,7 +26,7 @@ export class TaskWeeklyController {
         summary: 'Id пользователя и ключ задания для подтверждения',
         value: {
           userId: 'e64c7d5e-e38a-461a-99e1-38eae06f75a0',
-          taskKey: TaskList.VIEWED_HOW_IT_WORKS,
+          taskKey: TaskList.SUBSCRIBED_INSTAGRAM,
         },
       },
     },
@@ -40,6 +40,38 @@ export class TaskWeeklyController {
         value: TaskExamples.weeklyCompletedResponse,
         summary:
           'Пример данных для ответа на запрос подтверждения недельного задания',
+      },
+    },
+  })
+  checkWeeklyTask(
+    @Body() body: { userId: string; taskKey: TaskList },
+  ): Promise<UserTaskProgressResponseDto> {
+    return this.taskService.checkWeeklyTask(body.userId, body.taskKey);
+  }
+
+  @Post('confirm')
+  @ApiOperation({ summary: 'Подтвердить недельное задание' })
+  @ApiBody({
+    description: 'Данные для подтверждения',
+    examples: {
+      example1: {
+        summary: 'Id пользователя и ключ задания для подтверждения',
+        value: {
+          userId: 'e64c7d5e-e38a-461a-99e1-38eae06f75a0',
+          taskKey: TaskList.SUBSCRIBED_INSTAGRAM,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Результат проверки',
+    type: UserTaskProgressResponseDto,
+    examples: {
+      weeklyCompletedResponse: {
+        value: TaskExamples.weeklyCompletedResponse,
+        summary:
+          'Пример данных для ответа на запрос проверки недельного задания',
       },
     },
   })

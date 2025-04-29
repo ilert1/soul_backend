@@ -5,10 +5,15 @@ import { TranslationService } from './translation.service';
 import { LANGUAGE_CHANGE_COMMAND_ARRAY } from './consts';
 import { TgUserLanguageService } from './tg-user-language.service';
 import { run } from '@grammyjs/runner';
+import { Api, TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
+  private client: TelegramClient;
+  private isConnected = false;
+  private stringSession: StringSession;
 
   constructor(
     private readonly telegramUserService: TelegramUserService,
@@ -17,6 +22,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
+    await this.initializeClient();
+
     if (process.env.BOT_ACITVE === 'false') return;
 
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN ?? '');
@@ -138,5 +145,57 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     await ctx.answerCallbackQuery(thankYouText);
     await ctx.editMessageText(thankYouText);
     await this.sendWelcomeMessage(ctx);
+  }
+
+  private async initializeClient() {
+    const apiId = parseInt(process.env.TELEGRAM_API_ID as string);
+    const apiHash = process.env.TELEGRAM_API_HASH;
+    const sessionString = process.env.TELEGRAM_SESSION_STRING;
+
+    if (!apiId || !apiHash || !sessionString) {
+      throw new Error('Недостаточно данных для инициализации Telegram клиента');
+    }
+
+    this.stringSession = new StringSession(sessionString);
+
+    this.client = new TelegramClient(this.stringSession, apiId, apiHash, {
+      connectionRetries: 5,
+    });
+
+    try {
+      await this.connectExistingSession();
+    } catch {
+      this.isConnected = false;
+    }
+  }
+
+  private async connectExistingSession() {
+    await this.client.connect();
+    this.isConnected = true;
+  }
+
+  async disconnect() {
+    if (this.isConnected && this.client) {
+      await this.client.disconnect();
+      this.isConnected = false;
+    }
+  }
+
+  async getTgUserAbout(telegramId: string): Promise<string> {
+    if (!this.isConnected) {
+      await this.client.connect();
+    }
+
+    try {
+      const result = await this.client.invoke(
+        new Api.users.GetFullUser({
+          id: telegramId,
+        }),
+      );
+
+      return result.fullUser.about || '';
+    } catch {
+      return '';
+    }
   }
 }
