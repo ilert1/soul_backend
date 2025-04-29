@@ -34,6 +34,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    await this.disconnect();
+
     if (process.env.BOT_ACITVE === 'false') return;
 
     await this.bot.stop();
