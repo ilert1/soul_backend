@@ -406,3 +406,8 @@ model Admin {
 
     @@map("admins")
 }
+
+enum LeaderboardType {
+    XP
+    SP
+}
