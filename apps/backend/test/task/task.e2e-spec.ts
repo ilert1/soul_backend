@@ -168,72 +168,49 @@ describe('TaskController (e2e)', () => {
     });
   });
 
-  describe('POST /task/weekly/confirm', () => {
-    it('| + | — подтвердить недельное подзадание', async () => {
+  describe('POST /task/weekly/pending-check', () => {
+    it('| + | — отметить недельное подзадание как выполненное но не проверенное пользователем', async () => {
       const response = await request(server)
-        .post('/task/weekly/confirm')
+        .post('/task/weekly/pending-check')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          userId: userId.toString(),
           taskKey: TaskList.SUBSCRIBED_INSTAGRAM,
         })
         .expect(isResponseValid);
 
-      assert.equal(response.body.status, TaskStatus.COMPLETED);
+      assert.equal(response.body.status, TaskStatus.PENDING_CHECK);
+      assert.equal(response.body.progress, 0);
     });
 
-    it('| + | — проверка состояния недельного главного задания (1/2)', async () => {
-      const response = await request(server)
-        .post('/task/weekly/confirm')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          userId: userId.toString(),
-          taskKey: TaskList.CHECKED_SOCIAL_MEDIA,
-        })
-        .expect(isResponseValid);
-
-      assert.equal(response.body.status, TaskStatus.IN_PROGRESS);
-      assert.equal(response.body.progress, 1);
-    });
-
-    it('| + | — проверка выполнения недельного главного задания (2/2)', async () => {
+    it('| - | — ошибка при ключе который не обрабатывается', async () => {
       await request(server)
-        .post('/task/weekly/confirm')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .post(`/task/weekly/pending-check`)
         .send({
-          userId: userId.toString(),
-          taskKey: TaskList.SUBSCRIBED_SOUL_FORUM,
-        });
-
-      const response = await request(server)
-        .post('/task/weekly/confirm')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          userId: userId.toString(),
-          taskKey: TaskList.CHECKED_SOCIAL_MEDIA,
-        })
-        .expect(isResponseValid);
-
-      assert.equal(response.body.status, TaskStatus.COMPLETED);
-      assert.equal(response.body.progress, 2);
-    });
-
-    it('| - | — ошибка при неверном пользователе', async () => {
-      await request(server)
-        .post(`/task/weekly/confirm`)
-        .send({
-          userId: 'INVALID_USER_ID',
-          taskKey: TaskList.CHECKED_SOCIAL_MEDIA,
+          taskKey: TaskList.ADDED_REFLINK_IN_TG_PROFILE,
         })
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(isResponseUnvalid);
     });
+  });
+
+  describe('POST /task/weekly/check', () => {
+    it('| + | — проверка недельного подзадания', async () => {
+      const response = await request(server)
+        .post('/task/weekly/check')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          taskKey: TaskList.SHARED_WITH_FRIEND,
+        })
+        .expect(isResponseValid);
+
+      assert.equal(response.body.status, TaskStatus.COMPLETED);
+      assert.equal(response.body.progress, 1);
+    });
 
     it('| - | — ошибка, передан не недельный ключ задания', async () => {
       await request(server)
-        .post(`/task/weekly/confirm`)
+        .post(`/task/weekly/check`)
         .send({
-          userId: userId.toString(),
           taskKey: TaskList.PROFILE_COMPLETED,
         })
         .set('Authorization', `Bearer ${accessToken}`)

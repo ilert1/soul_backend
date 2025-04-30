@@ -20,6 +20,7 @@ export const tasks = [
   },
   {
     key: TaskList.SUBSCRIBED_SOUL_FORUM,
+    parentKey: TaskList.CHECKED_SOCIAL_MEDIA,
     type: TaskType.WEEKLY,
     title: 'Подписаться на SOUL forum',
     description:
@@ -29,6 +30,7 @@ export const tasks = [
   },
   {
     key: TaskList.SUBSCRIBED_INSTAGRAM,
+    parentKey: TaskList.CHECKED_SOCIAL_MEDIA,
     type: TaskType.WEEKLY,
     title: 'Подписаться на Instagram проекта',
     description:
@@ -46,6 +48,7 @@ export const tasks = [
   },
   {
     key: TaskList.SHARED_WITH_FRIEND,
+    parentKey: TaskList.SHARED_ABOUT_SOUL,
     type: TaskType.WEEKLY,
     title: 'Отправить сообщение другу',
     description:
@@ -55,6 +58,7 @@ export const tasks = [
   },
   {
     key: TaskList.ADDED_REFLINK_IN_TG_PROFILE,
+    parentKey: TaskList.SHARED_ABOUT_SOUL,
     type: TaskType.WEEKLY,
     title: 'Добавить реферальную ссылку в свой Telegram профиль',
     description:
@@ -73,6 +77,7 @@ export const tasks = [
   },
   {
     key: TaskList.VOTED_SOUL_FORUM,
+    parentKey: TaskList.PREMIUM_SUPPORT,
     type: TaskType.WEEKLY,
     title: 'Проголосовать за SOUL forum',
     description:

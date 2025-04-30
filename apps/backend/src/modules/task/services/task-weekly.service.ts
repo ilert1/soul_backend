@@ -1,12 +1,10 @@
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TaskList, TaskStatus } from '@prisma/client';
-import { mainTaskToSubTasks, subTaskToMainTask } from '../task.constants';
+import { TaskList, TaskStatus, TaskType } from '@prisma/client';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
 import { TaskProgressService } from './task-progress.service';
 import { TelegramClientService } from 'src/modules/telegramClient/telegramClient.service';
@@ -23,250 +21,197 @@ export class TaskWeeklyService {
     userId: string,
     taskKey: TaskList,
   ): Promise<UserTaskProgressResponseDto> {
-    const mainTaskKey = subTaskToMainTask[taskKey];
-    const subTasks = mainTaskToSubTasks[taskKey];
+    const subTask = await this.prisma.task.findUniqueOrThrow({
+      where: { key: taskKey, type: TaskType.WEEKLY, parentKey: { not: null } },
+      select: {
+        key: true,
+        parentKey: true,
+        goal: true,
+      },
+    });
 
-    // Если это подзадача
-    if (mainTaskKey) {
-      let subTaskProgress =
-        await this.progressService.getUserProgressUniqueTask(userId, taskKey);
+    const userProgress = await this.progressService.getUserProgressUniqueTask(
+      userId,
+      taskKey,
+    );
 
-      // если статус IN_PROGRESS — завершаем подзадачу
-      if (subTaskProgress.status === TaskStatus.IN_PROGRESS) {
-        subTaskProgress = await this.prisma.userTaskProgress.update({
-          where: { userId_taskKey: { userId, taskKey } },
-          data: {
-            progress: 1,
-            status: TaskStatus.COMPLETED,
-            completedAt: new Date(),
-          },
-        });
+    let result: UserTaskProgressResponseDto | undefined;
 
-        // После этого проверяем все подзадачи
-        const relatedTasks = await this.prisma.userTaskProgress.findMany({
-          where: {
-            userId,
-            taskKey: { in: mainTaskToSubTasks[mainTaskKey] },
-          },
-          select: {
-            taskKey: true,
-            status: true,
-          },
-        });
-
-        const allSubTasksCompleted =
-          mainTaskToSubTasks[mainTaskKey]?.every(
-            (subKey) =>
-              relatedTasks.find(
-                (task) =>
-                  task.taskKey === subKey &&
-                  task.status === TaskStatus.COMPLETED,
-              ) !== undefined,
-          ) ?? false;
-
-        const parentTaskData = await this.prisma.task.findUnique({
-          where: { key: mainTaskKey },
-          select: { goal: true },
-        });
-
-        if (allSubTasksCompleted) {
-          // Завершаем главную задачу
-          await this.prisma.userTaskProgress.upsert({
-            where: { userId_taskKey: { userId, taskKey: mainTaskKey } },
-            update: {
-              progress: parentTaskData?.goal ?? subTasks?.length ?? 2,
-              status: TaskStatus.COMPLETED,
-              completedAt: new Date(),
-            },
-            create: {
-              userId,
-              taskKey: mainTaskKey,
-              progress: parentTaskData?.goal ?? subTasks?.length ?? 2,
-              status: TaskStatus.COMPLETED,
-              completedAt: new Date(),
-            },
-          });
-        } else {
-          // Подзадачи ещё не все сделаны, но главную нужно пометить как начатую
-          await this.prisma.userTaskProgress.upsert({
-            where: { userId_taskKey: { userId, taskKey: mainTaskKey } },
-            update: {
-              progress: 1,
-              status: TaskStatus.IN_PROGRESS,
-              completedAt: null,
-            },
-            create: {
-              userId,
-              taskKey: mainTaskKey,
-              progress: 1,
-              status: TaskStatus.IN_PROGRESS,
-              completedAt: null,
-            },
-          });
-        }
-      }
-
-      // Возвращаем результат подзадачи
-      return subTaskProgress;
-    }
-
-    // Если это главная задача
-    if (subTasks) {
-      const relatedTasks = await this.prisma.userTaskProgress.findMany({
-        where: {
-          userId,
-          taskKey: { in: subTasks },
-        },
-        select: {
-          taskKey: true,
-          status: true,
+    // Завершаем задачу, если в процессе или ожидает подтверждения
+    if (
+      userProgress.status === TaskStatus.IN_PROGRESS ||
+      userProgress.status === TaskStatus.PENDING_CHECK
+    ) {
+      result = await this.prisma.userTaskProgress.update({
+        where: { userId_taskKey: { userId, taskKey } },
+        data: {
+          progress: subTask.goal,
+          status: TaskStatus.COMPLETED,
+          completedAt: new Date(),
         },
       });
-
-      const allSubTasksCompleted = subTasks.every(
-        (subKey) =>
-          relatedTasks.find(
-            (task) =>
-              task.taskKey === subKey && task.status === TaskStatus.COMPLETED,
-          ) !== undefined,
-      );
-
-      const parentTask = await this.prisma.task.findUnique({
-        where: { key: taskKey },
-        select: { goal: true },
-      });
-
-      let mainTaskProgress =
-        await this.progressService.getUserProgressUniqueTask(userId, taskKey);
-
-      if (allSubTasksCompleted) {
-        // если все подзадачи выполнены - завершаем главную
-        mainTaskProgress = await this.prisma.userTaskProgress.upsert({
-          where: { userId_taskKey: { userId, taskKey } },
-          update: {
-            progress: parentTask?.goal ?? subTasks.length,
-            status: TaskStatus.COMPLETED,
-            completedAt: new Date(),
-          },
-          create: {
-            userId,
-            taskKey,
-            progress: parentTask?.goal ?? subTasks.length,
-            status: TaskStatus.COMPLETED,
-            completedAt: new Date(),
-          },
-        });
-      } else {
-        // если задача не найдена - создаём
-        if (!mainTaskProgress) {
-          const completedSubTasks = relatedTasks.filter(
-            (task) => task.status === TaskStatus.COMPLETED,
-          );
-
-          mainTaskProgress = await this.prisma.userTaskProgress.create({
-            data: {
-              userId,
-              taskKey,
-              progress: completedSubTasks.length,
-            },
-          });
-        }
-      }
-
-      return mainTaskProgress;
+    } else {
+      return userProgress;
     }
 
-    // если ни подзадача и ни главная - ошибка
-    throw new BadRequestException('Задача не найдена');
+    // Проверим, завершены ли все подзадачи и при необходимости обновим главную
+    const siblingSubTasks = await this.prisma.task.findMany({
+      where: { parentKey: subTask.parentKey },
+      select: { key: true },
+    });
+
+    const siblingProgress = await this.prisma.userTaskProgress.findMany({
+      where: {
+        userId,
+        taskKey: { in: siblingSubTasks.map((s) => s.key) },
+      },
+      select: { taskKey: true, status: true },
+    });
+
+    const completedCount = siblingProgress.filter(
+      (p) => p.status === TaskStatus.COMPLETED,
+    ).length;
+
+    const allSubTasksCompleted =
+      siblingProgress.length === siblingSubTasks.length;
+
+    await this.prisma.userTaskProgress.upsert({
+      where: { userId_taskKey: { userId, taskKey: subTask.parentKey! } },
+      update: {
+        progress: completedCount,
+        status: allSubTasksCompleted
+          ? TaskStatus.COMPLETED
+          : TaskStatus.IN_PROGRESS,
+        completedAt: allSubTasksCompleted ? new Date() : null,
+      },
+      create: {
+        userId,
+        taskKey: subTask.parentKey!,
+        progress: completedCount,
+        status: allSubTasksCompleted
+          ? TaskStatus.COMPLETED
+          : TaskStatus.IN_PROGRESS,
+        completedAt: allSubTasksCompleted ? new Date() : null,
+      },
+    });
+
+    return result;
+  }
+
+  // Для заданий которые невозможно проверить на сервере
+  async pendingCheckWeeklyTask(
+    userId: string,
+    taskKey: TaskList,
+  ): Promise<UserTaskProgressResponseDto> {
+    const userTaskProgress = await this.validateAndGetUserWeeklyTaskProgress(
+      userId,
+      taskKey,
+    );
+
+    let result: UserTaskProgressResponseDto | undefined;
+
+    if (userTaskProgress.status === TaskStatus.IN_PROGRESS) {
+      switch (taskKey) {
+        // Проверка задания посмотреть инстаграм
+        case TaskList.SUBSCRIBED_INSTAGRAM: {
+          result = await this.prisma.userTaskProgress.update({
+            where: { userId_taskKey: { userId, taskKey } },
+            data: { status: TaskStatus.PENDING_CHECK },
+          });
+
+          break;
+        }
+
+        default:
+          throw new NotFoundException('Задание не найдено');
+      }
+    }
+
+    if (!result) {
+      return userTaskProgress;
+    }
+
+    return result;
   }
 
   async checkWeeklyTask(
     userId: string,
     taskKey: TaskList,
   ): Promise<UserTaskProgressResponseDto> {
-    const userTaskProgress =
-      await this.progressService.getUserProgressUniqueTask(userId, taskKey);
-    const weeklyTaskKeys = await this.getWeeklyTaskKeys();
-
-    if (!weeklyTaskKeys.includes(taskKey)) {
-      throw new NotFoundException('Задание не найдено');
-    }
-
-    if (userTaskProgress.status !== TaskStatus.IN_PROGRESS) {
-      return userTaskProgress;
-    }
+    const userTaskProgress = await this.validateAndGetUserWeeklyTaskProgress(
+      userId,
+      taskKey,
+    );
 
     let result: UserTaskProgressResponseDto | undefined;
 
-    const now = new Date();
+    const { weekStart, weekEnd } = this.getCurrentWeekRange();
 
-    // День недели: 0 (вс) – 6 (сб)
-    const day = now.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day; // если воскресенье — отнимаем 6
+    if (userTaskProgress.status === TaskStatus.PENDING_CHECK) {
+      switch (taskKey) {
+        // Проверка задания посмотреть инстаграм
+        case TaskList.SUBSCRIBED_INSTAGRAM: {
+          result = await this.confirmWeeklyUserTask(userId, taskKey);
 
-    const weekStart = new Date(now);
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(now.getDate() + diffToMonday);
+          break;
+        }
 
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    switch (taskKey) {
-      // Проверка задания посмотреть инстаграм
-      case TaskList.SUBSCRIBED_INSTAGRAM: {
-        result = await this.confirmWeeklyUserTask(userId, taskKey);
-
-        break;
+        default:
+          throw new NotFoundException('Задание не найдено');
       }
-      // Проверка задания поделиться с другом
-      case TaskList.SHARED_WITH_FRIEND: {
-        const count = await this.prisma.invite.count({
-          where: {
-            inviterId: userId,
-            createdAt: {
-              gte: weekStart,
-              lte: weekEnd,
+    }
+
+    if (userTaskProgress.status === TaskStatus.IN_PROGRESS) {
+      switch (taskKey) {
+        // Проверка задания поделиться с другом
+        case TaskList.SHARED_WITH_FRIEND: {
+          const count = await this.prisma.invite.count({
+            where: {
+              inviterId: userId,
+              createdAt: {
+                gte: weekStart,
+                lte: weekEnd,
+              },
             },
-          },
-        });
+          });
 
-        if (count >= 1) {
-          result = await this.confirmWeeklyUserTask(userId, taskKey);
+          if (count >= 1) {
+            result = await this.confirmWeeklyUserTask(userId, taskKey);
+          }
+
+          break;
         }
+        // Проверка задания поделиться с другом
+        case TaskList.ADDED_REFLINK_IN_TG_PROFILE: {
+          const user = await this.prisma.telegramUser.findUnique({
+            where: { userId },
+            select: { telegramId: true },
+          });
 
-        break;
-      }
-      // Проверка задания поделиться с другом
-      case TaskList.ADDED_REFLINK_IN_TG_PROFILE: {
-        const user = await this.prisma.telegramUser.findUnique({
-          where: { userId },
-          select: { telegramId: true },
-        });
+          if (!user || !user.telegramId) {
+            throw new InternalServerErrorException(
+              'Telegram профиль не привязан',
+            );
+          }
 
-        if (!user || !user.telegramId) {
-          throw new InternalServerErrorException(
-            'Telegram профиль не привязан',
+          const refLinkStart = process.env.REF_LINK_START;
+          const referralLink = `${refLinkStart}`;
+
+          const about = await this.telegramClientService.getTgUserAbout(
+            user.telegramId,
           );
+          const hasReferralLink = about.includes(referralLink);
+
+          if (hasReferralLink) {
+            result = await this.confirmWeeklyUserTask(userId, taskKey);
+          }
+
+          break;
         }
 
-        const refLinkStart = process.env.REF_LINK_START;
-        const referralLink = `${refLinkStart}`;
-
-        const about = await this.telegramClientService.getTgUserAbout(
-          user.telegramId,
-        );
-        const hasReferralLink = about.includes(referralLink);
-
-        if (hasReferralLink) {
-          result = await this.confirmWeeklyUserTask(userId, taskKey);
-        }
-
-        break;
+        default:
+          throw new NotFoundException('Задание не найдено');
       }
-
-      default:
-        throw new NotFoundException('Задание не найдено');
     }
 
     if (!result) {
@@ -289,7 +234,7 @@ export class TaskWeeklyService {
     });
   }
 
-  async getWeeklyTaskKeys(): Promise<TaskList[]> {
+  private async getWeeklyTaskKeys(): Promise<TaskList[]> {
     // находим все taskKey, у которых type = WEEKLY
     const weeklyTasks = await this.prisma.task.findMany({
       where: {
@@ -302,5 +247,42 @@ export class TaskWeeklyService {
 
     // возвращаем массив ключей
     return weeklyTasks.map((task) => task.key);
+  }
+
+  private async validateAndGetUserWeeklyTaskProgress(
+    userId: string,
+    taskKey: TaskList,
+  ) {
+    const userTaskProgress =
+      await this.progressService.getUserProgressUniqueTask(userId, taskKey);
+
+    const weeklyTaskKeys = await this.getWeeklyTaskKeys();
+
+    if (!weeklyTaskKeys.includes(taskKey)) {
+      throw new NotFoundException('Задание не найдено в списке недельных');
+    }
+
+    return userTaskProgress;
+  }
+
+  private getCurrentWeekRange(): { weekStart: Date; weekEnd: Date } {
+    const now = new Date();
+
+    // День недели: 0 (вс) – 6 (сб)
+    const day = now.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day; // если воскресенье — отнимаем 6
+
+    const weekStart = new Date(now);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(now.getDate() + diffToMonday);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return {
+      weekStart,
+      weekEnd,
+    };
   }
 }
