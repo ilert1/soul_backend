@@ -6,7 +6,6 @@ import {
   Patch,
   Query,
   UseInterceptors,
-  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
