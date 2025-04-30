@@ -1,9 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Bot, InputFile } from 'grammy';
-import { TelegramUserService } from 'src/modules/telegramUser/telegramUser.service';
-// import { TranslationService } from './translation.service';
-// import { LANGUAGE_CHANGE_COMMAND_ARRAY } from './consts';
-import { TgUserLanguageService } from '../common/tg-user-language.service';
 import { run } from '@grammyjs/runner';
 
 @Injectable()
@@ -11,13 +7,10 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private welcomeMessages = new Map<number, number>();
 
-  constructor(
-    private readonly telegramUserService: TelegramUserService,
-    private readonly tgUserLanguageService: TgUserLanguageService,
-  ) {}
+  constructor() {}
 
   onModuleInit() {
-    if (process.env.BOT_ACITVE === 'false') return;
+    if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
     this.bot = new Bot(process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '');
 
@@ -27,7 +20,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    if (process.env.BOT_ACITVE === 'false') return;
+    if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
     await this.bot.stop();
   }

@@ -17,8 +17,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    // if (process.env.BOT_ACITVE === 'false') return;
-    if (process.env.BOT_ACITVE === 'true') return;
+    if (process.env.BOT_ACITVE === 'false') return;
 
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN ?? '');
     this.registerBotMiddlewares();
@@ -28,8 +27,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    // if (process.env.BOT_ACITVE === 'false') return;
-    if (process.env.BOT_ACITVE === 'true') return;
+    if (process.env.BOT_ACITVE === 'false') return;
 
     await this.bot.stop();
   }
