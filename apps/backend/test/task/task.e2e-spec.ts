@@ -3,11 +3,7 @@ import { Test } from '@nestjs/testing';
 import * as assert from 'assert';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
-import {
-  generateTestUserId,
-  isResponseUnvalid,
-  isResponseValid,
-} from '../utils';
+import { isResponseUnvalid, isResponseValid } from '../utils';
 import { telegramData } from 'test/auth/auth-helper';
 import { TaskList, TaskStatus, TaskType } from '@prisma/client';
 import { UserExampleRequestUpdate } from 'src/modules/user/dto/examples/user.example';
@@ -17,7 +13,6 @@ describe('TaskController (e2e)', () => {
 
   let app: INestApplication;
   let accessToken: string;
-  let userId: number = generateTestUserId();
 
   before(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -36,7 +31,6 @@ describe('TaskController (e2e)', () => {
       .expect(isResponseValid);
 
     accessToken = response.body.accessToken;
-    userId = response.body.id;
   });
 
   after(async () => {
