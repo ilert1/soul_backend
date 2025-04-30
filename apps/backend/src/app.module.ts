@@ -69,6 +69,7 @@ import { TaskManagementService } from './modules/task/services/task-management.s
 import { TaskProgressService } from './modules/task/services/task-progress.service';
 import { TaskWeeklyController } from './modules/task/controllers/task-weekly.controller';
 import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
+import { TelegramClientModule } from './modules/telegramClient/telegramClient.module';
 
 @Module({
   imports: [
@@ -105,6 +106,7 @@ import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
     WsModule,
     NotificationsModule,
     TelegramModule,
+    TelegramClientModule,
     ExperienceModule,
   ],
   controllers: [

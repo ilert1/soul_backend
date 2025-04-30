@@ -15,10 +15,10 @@ import { TaskWeeklyService } from './services/task-weekly.service';
 import { TaskWeeklyController } from './controllers/task-weekly.controller';
 import { WeeklyTaskResetService } from './services/task-weekly-reset-schedule.service';
 import { ExperienceService } from '../experience/experience.service';
-import { TelegramModule } from 'src/telegram/telegram.module';
+import { TelegramClientModule } from '../telegramClient/telegramClient.module';
 
 @Module({
-  imports: [PrismaModule, WalletModule, TelegramModule],
+  imports: [PrismaModule, WalletModule, TelegramClientModule],
   controllers: [
     TaskCrudController,
     TaskProgressController,

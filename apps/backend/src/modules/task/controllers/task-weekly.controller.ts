@@ -50,7 +50,7 @@ export class TaskWeeklyController {
   }
 
   @Post('confirm')
-  @ApiOperation({ summary: 'Подтвердить недельное задание' })
+  @ApiOperation({ summary: 'ADMIN-API Подтвердить недельное задание' })
   @ApiBody({
     description: 'Данные для подтверждения',
     examples: {

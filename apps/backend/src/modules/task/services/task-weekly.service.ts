@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,14 +9,14 @@ import { TaskList, TaskStatus } from '@prisma/client';
 import { mainTaskToSubTasks, subTaskToMainTask } from '../task.constants';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
 import { TaskProgressService } from './task-progress.service';
-import { TelegramService } from 'src/telegram/telegram.service';
+import { TelegramClientService } from 'src/modules/telegramClient/telegramClient.service';
 
 @Injectable()
 export class TaskWeeklyService {
   constructor(
     private prisma: PrismaService,
     private progressService: TaskProgressService,
-    private telegramService: TelegramService,
+    private telegramClientService: TelegramClientService,
   ) {}
 
   async confirmWeeklyUserTask(
@@ -23,6 +24,7 @@ export class TaskWeeklyService {
     taskKey: TaskList,
   ): Promise<UserTaskProgressResponseDto> {
     const mainTaskKey = subTaskToMainTask[taskKey];
+    const subTasks = mainTaskToSubTasks[taskKey];
 
     // Если это подзадача
     if (mainTaskKey) {
@@ -72,14 +74,14 @@ export class TaskWeeklyService {
           await this.prisma.userTaskProgress.upsert({
             where: { userId_taskKey: { userId, taskKey: mainTaskKey } },
             update: {
-              progress: parentTaskData?.goal ?? 2,
+              progress: parentTaskData?.goal ?? subTasks?.length ?? 2,
               status: TaskStatus.COMPLETED,
               completedAt: new Date(),
             },
             create: {
               userId,
               taskKey: mainTaskKey,
-              progress: parentTaskData?.goal ?? 2,
+              progress: parentTaskData?.goal ?? subTasks?.length ?? 2,
               status: TaskStatus.COMPLETED,
               completedAt: new Date(),
             },
@@ -109,8 +111,6 @@ export class TaskWeeklyService {
     }
 
     // Если это главная задача
-    const subTasks = mainTaskToSubTasks[taskKey];
-
     if (subTasks) {
       const relatedTasks = await this.prisma.userTaskProgress.findMany({
         where: {
@@ -245,13 +245,15 @@ export class TaskWeeklyService {
         });
 
         if (!user || !user.telegramId) {
-          throw new BadRequestException('Telegram профиль не привязан');
+          throw new InternalServerErrorException(
+            'Telegram профиль не привязан',
+          );
         }
 
         const refLinkStart = process.env.REF_LINK_START;
         const referralLink = `${refLinkStart}`;
 
-        const about = await this.telegramService.getTgUserAbout(
+        const about = await this.telegramClientService.getTgUserAbout(
           user.telegramId,
         );
         const hasReferralLink = about.includes(referralLink);

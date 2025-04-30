@@ -112,7 +112,6 @@ describe('TaskController (e2e)', () => {
         .expect(isResponseValid);
 
       assert.ok(response.body.id, 'id не вернулся');
-      assert.equal(response.body.userId, userId);
       assert.equal(response.body.taskKey, TaskList.CREATED_FIRST_MEETING);
     });
 

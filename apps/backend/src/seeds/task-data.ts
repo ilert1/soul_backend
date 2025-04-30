@@ -68,7 +68,7 @@ export const tasks = [
     title: 'Premium поддержка',
     description:
       'Заработайте дополнительные SOUL points, если у вас есть подписка Telegram Premium',
-    goal: 2,
+    goal: 1,
     rewardSp: 300,
   },
   {
@@ -77,15 +77,6 @@ export const tasks = [
     title: 'Проголосовать за SOUL forum',
     description:
       'Это поможет нам расширить функционал форума и открыть новые возможности оформления от Telegram',
-    goal: 1,
-    rewardSp: 0,
-  },
-  {
-    key: TaskList.SHARED_STORY_IN_TG,
-    type: TaskType.WEEKLY,
-    title: 'Поделиться историей в Telegram',
-    description:
-      'Расскажите в истории о ближайшей встрече, на которую вы пойдете, и позовите на нее своих друзей',
     goal: 1,
     rewardSp: 0,
   },
