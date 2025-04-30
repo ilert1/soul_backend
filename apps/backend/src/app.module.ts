@@ -42,7 +42,6 @@ import { NotificationsController } from './modules/notification/notification.con
 import { NotificationsModule } from './modules/notification/notification.module';
 import { CurrencyService } from './modules/static/currency.service';
 import { CurrencyController } from './modules/static/currency.controller';
-import { TelegramModule } from './telegram/telegram.module';
 import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import * as path from 'path';
 import { TestNotificationController } from './modules/notification/test-notification.controller';
@@ -69,6 +68,9 @@ import { TaskManagementService } from './modules/task/services/task-management.s
 import { TaskProgressService } from './modules/task/services/task-progress.service';
 import { TaskWeeklyController } from './modules/task/controllers/task-weekly.controller';
 import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
+import { TelegramModule } from './telegram/bot/telegram.module';
+import { GroupBotModule } from './telegram/GroupBot/group-bot.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -87,6 +89,10 @@ import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
         AcceptLanguageResolver,
       ],
     }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'assets'),
+      serveRoot: '/static',
+    }),
     PrismaModule,
     AuthModule,
     UserModule,
@@ -104,8 +110,9 @@ import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
     FarmModule,
     WsModule,
     NotificationsModule,
-    TelegramModule,
     ExperienceModule,
+    TelegramModule,
+    GroupBotModule,
   ],
   controllers: [
     UserController,

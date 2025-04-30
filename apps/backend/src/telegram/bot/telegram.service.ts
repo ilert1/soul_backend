@@ -3,7 +3,7 @@ import { Bot, Context } from 'grammy';
 import { TelegramUserService } from 'src/modules/telegramUser/telegramUser.service';
 import { TranslationService } from './translation.service';
 import { LANGUAGE_CHANGE_COMMAND_ARRAY } from './consts';
-import { TgUserLanguageService } from './tg-user-language.service';
+import { TgUserLanguageService } from '../common/tg-user-language.service';
 import { run } from '@grammyjs/runner';
 
 @Injectable()
@@ -17,7 +17,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    if (process.env.BOT_ACITVE === 'false') return;
+    // if (process.env.BOT_ACITVE === 'false') return;
+    if (process.env.BOT_ACITVE === 'true') return;
 
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN ?? '');
     this.registerBotMiddlewares();
@@ -27,7 +28,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    if (process.env.BOT_ACITVE === 'false') return;
+    // if (process.env.BOT_ACITVE === 'false') return;
+    if (process.env.BOT_ACITVE === 'true') return;
 
     await this.bot.stop();
   }

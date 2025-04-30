@@ -5,12 +5,16 @@ import * as dotenv from 'dotenv';
 import { AppLoggerService } from './modules/logger/logger.service';
 import { LoggerInterceptor } from './modules/logger/logger.interceptor';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import * as path from 'path';
 
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const logger = app.get(AppLoggerService);
+
+  app.useStaticAssets(path.join(__dirname, 'assets'));
 
   app.useGlobalInterceptors(new LoggerInterceptor(logger));
   const config = new DocumentBuilder()
