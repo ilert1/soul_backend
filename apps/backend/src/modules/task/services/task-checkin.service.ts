@@ -92,7 +92,6 @@ export class TaskCheckinService {
         completedAt: now,
       },
       select: {
-        userId: true,
         taskKey: true,
         progress: true,
         status: true,
