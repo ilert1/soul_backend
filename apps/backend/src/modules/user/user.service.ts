@@ -171,9 +171,7 @@ export class UserService {
             ? { eventId: eventId }
             : {
                 eventId: eventId,
-                isConfirmedAt: {
-                  not: null,
-                },
+                isConfirmed: true,
               },
         order:
           event.finishDate > currentDate
@@ -182,10 +180,17 @@ export class UserService {
                 { receivedPoints: 'asc' }, // Сначала те, у кого есть баллы
                 { isConfirmedAt: 'asc' }, // Затем по дате "обилечивания"
               ],
-        include: {
+        select: {
           user: {
-            include: {
-              avatarImage: true,
+            select: {
+              id: true,
+              fullName: true,
+              avatarImage: {
+                select: {
+                  id: true,
+                  mimeType: true,
+                },
+              },
             },
           },
         },
@@ -200,7 +205,16 @@ export class UserService {
   ): Promise<UserResponseDto | null> {
     const user = await this.prisma.user.findFirstOrThrow({
       where: { activities: { some: { id: activityId } } },
-      include: { avatarImage: true },
+      select: {
+        id: true,
+        fullName: true,
+        avatarImage: {
+          select: {
+            id: true,
+            mimeType: true,
+          },
+        },
+      },
     });
 
     return user;
