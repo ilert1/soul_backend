@@ -38,3 +38,11 @@ export class UserResponseDto {
   })
   avatarImage: UserAvatarImage | null;
 }
+
+export class ActivityWithUserResponseDto {
+  @Type(() => UserResponseDto)
+  @ApiProperty({
+    description: 'Пользователь из активности',
+  })
+  user: UserResponseDto;
+}

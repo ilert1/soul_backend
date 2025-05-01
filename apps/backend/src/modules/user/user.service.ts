@@ -10,8 +10,12 @@ import { LeaderboardType, Prisma, TaskList, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/pagination.utils';
-import { UserResponseDto } from './dto/user-response.dto';
+import {
+  ActivityWithUserResponseDto,
+  UserResponseDto,
+} from './dto/user-response.dto';
 import { TaskManagementService } from '../task/services/task-management.service';
+import { PaginatedResult } from 'src/common/types/paginarted-result';
 
 @Injectable()
 export class UserService {
@@ -147,15 +151,53 @@ export class UserService {
     return await tx.user.create({ data });
   }
 
-  async findUsersByEventId(eventId: string): Promise<UserResponseDto[] | null> {
-    await this.prisma.event.findUniqueOrThrow({
+  async findUsersByEventId(
+    paginationDto: { page: number; limit: number },
+    eventId: string,
+  ): Promise<PaginatedResult<UserResponseDto | null>> {
+    const event = await this.prisma.event.findUniqueOrThrow({
       where: { id: eventId, isArchived: false },
     });
 
-    return await this.prisma.user.findMany({
-      where: { activities: { some: { eventId } } },
-      include: { avatarImage: true },
+    const currentDate = new Date();
+
+    const res = await paginate<ActivityWithUserResponseDto>({
+      prisma: this.prisma,
+      model: 'activity',
+      paginationDto,
+      options: {
+        where:
+          event.finishDate > currentDate
+            ? { eventId: eventId }
+            : {
+                eventId: eventId,
+                isConfirmed: true,
+              },
+        order:
+          event.finishDate > currentDate
+            ? { joinedAt: 'asc' } // Сортировка по дате записи на мероприятие
+            : [
+                { receivedPoints: 'asc' }, // Сначала те, у кого есть баллы
+                { isConfirmedAt: 'asc' }, // Затем по дате "обилечивания"
+              ],
+        select: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarImage: {
+                select: {
+                  id: true,
+                  mimeType: true,
+                },
+              },
+            },
+          },
+        },
+      },
     });
+
+    return { ...res, items: res.items.map((item) => item.user) };
   }
 
   async findUserByActivityId(
@@ -163,7 +205,16 @@ export class UserService {
   ): Promise<UserResponseDto | null> {
     const user = await this.prisma.user.findFirstOrThrow({
       where: { activities: { some: { id: activityId } } },
-      include: { avatarImage: true },
+      select: {
+        id: true,
+        fullName: true,
+        avatarImage: {
+          select: {
+            id: true,
+            mimeType: true,
+          },
+        },
+      },
     });
 
     return user;
