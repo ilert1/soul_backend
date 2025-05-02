@@ -26,9 +26,9 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   private registerHello() {
-    const navigationURL = process.env.FORUM_NAVIGATION_URL!;
-    const instructionURL = process.env.INSTRUCTION_URL!;
-    const detailsURL = process.env.DETAILS_URL!;
+    const navigationURL = process.env.FORUM_NAVIGATION_URL || '';
+    const instructionURL = process.env.INSTRUCTION_URL || '';
+    const detailsURL = process.env.DETAILS_URL || '';
 
     this.bot.on(':new_chat_members', async (ctx) => {
       const chatId = ctx?.chat?.id;
