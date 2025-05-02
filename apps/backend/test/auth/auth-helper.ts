@@ -24,7 +24,8 @@ export const telegramData: TelegramDataDto = {
       username: 'mockedchat',
       type: 'group',
     },
-    authDate: Math.floor(Date.now() / 1000),
+    signature: 'signature',
+    authDate: new Date().toISOString(),
     hash: 'mockedHash',
   },
 };

@@ -71,6 +71,7 @@ import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
 import { TelegramModule } from './telegram/bot/telegram.module';
 import { GroupBotModule } from './telegram/GroupBot/group-bot.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TelegramClientModule } from './modules/telegramClient/telegramClient.module';
 
 @Module({
   imports: [
@@ -110,6 +111,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
     FarmModule,
     WsModule,
     NotificationsModule,
+    TelegramModule,
+    TelegramClientModule,
     ExperienceModule,
     TelegramModule,
     GroupBotModule,
