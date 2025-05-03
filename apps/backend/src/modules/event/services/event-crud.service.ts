@@ -40,7 +40,7 @@ export class EventCrudService {
     const currentDate = new Date();
 
     if (new Date(createEventDto.startDate) < currentDate) {
-      throw new InternalServerErrorException(
+      throw new BadRequestException(
         'Дата начала события не может быть в прошлом',
       );
     }
@@ -48,8 +48,8 @@ export class EventCrudService {
     if (
       new Date(createEventDto.finishDate) < new Date(createEventDto.startDate)
     ) {
-      throw new InternalServerErrorException(
-        'Дата окончания события не может быть меньше даты начала',
+      throw new BadRequestException(
+        'Дата окончания события не может быть раньше даты начала',
       );
     }
 
@@ -337,7 +337,7 @@ export class EventCrudService {
         new Date(updateEventDto.startDate ?? event.startDate)
       ) {
         throw new BadRequestException(
-          'Дата окончания события не может быть меньше даты начала',
+          'Дата окончания события не может быть раньше даты начала',
         );
       }
     }
@@ -348,7 +348,7 @@ export class EventCrudService {
         new Date(updateEventDto.finishDate ?? event.finishDate)
       ) {
         throw new BadRequestException(
-          'Дата начала события не может быть больше даты окончания',
+          'Дата начала события не может быть позже даты окончания',
         );
       }
     }
