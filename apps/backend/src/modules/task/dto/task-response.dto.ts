@@ -23,6 +23,12 @@ export class TaskResponseDto {
   title: string;
 
   @ApiProperty({
+    example: 'CHECKED_SOCIAL_MEDIA',
+    description: 'Ключ родительского задания для weekly',
+  })
+  parentKey: string | null;
+
+  @ApiProperty({
     example:
       'В Instagram мы публикуем важные новости, репостим сториз со встреч, рассказываем о локальных сообществах из разных стран',
     description: 'Описание задания',
