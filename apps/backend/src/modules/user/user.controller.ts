@@ -37,6 +37,8 @@ import { UserGlobalResponseDto } from './dto/response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UserService } from './user.service';
+import { PaginatedResult } from 'src/common/types/paginarted-result';
+import { DEFAULT_PAGE_SIZE } from 'src/common/utils/constants';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -198,6 +200,18 @@ export class UserController {
     required: true,
     description: 'Данные для получения всех пользователей по id события',
   })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Количество записей',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Номер страницы',
+    example: 1,
+  })
   @ApiResponse({
     status: 200,
     description: 'Список пользователей, связанных с событием',
@@ -207,8 +221,10 @@ export class UserController {
   @TransformField({ '': UserResponseDto })
   async getUsersByEventId(
     @Param('eventId') eventId: string,
-  ): Promise<UserResponseDto[] | null> {
-    return await this.userService.findUsersByEventId(eventId);
+    @Query('limit') limit: number = DEFAULT_PAGE_SIZE,
+    @Query('page') page: number = 1,
+  ): Promise<PaginatedResult<UserResponseDto | null>> {
+    return await this.userService.findUsersByEventId({ limit, page }, eventId);
   }
 
   @Patch('ban/:id')

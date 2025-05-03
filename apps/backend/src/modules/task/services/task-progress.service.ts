@@ -13,7 +13,6 @@ export class TaskProgressService {
     return await this.prisma.userTaskProgress.findMany({
       where: { userId },
       select: {
-        userId: true,
         taskKey: true,
         progress: true,
         status: true,
@@ -54,7 +53,6 @@ export class TaskProgressService {
         taskKey: { in: keys },
       },
       select: {
-        userId: true,
         taskKey: true,
         progress: true,
         status: true,
@@ -97,7 +95,6 @@ export class TaskProgressService {
       update: {},
       select: {
         id: true,
-        userId: true,
         taskKey: true,
         progress: true,
         status: true,

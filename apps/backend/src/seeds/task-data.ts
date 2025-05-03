@@ -20,6 +20,7 @@ export const tasks = [
   },
   {
     key: TaskList.SUBSCRIBED_SOUL_FORUM,
+    parentKey: TaskList.CHECKED_SOCIAL_MEDIA,
     type: TaskType.WEEKLY,
     title: 'Подписаться на SOUL forum',
     description:
@@ -29,6 +30,7 @@ export const tasks = [
   },
   {
     key: TaskList.SUBSCRIBED_INSTAGRAM,
+    parentKey: TaskList.CHECKED_SOCIAL_MEDIA,
     type: TaskType.WEEKLY,
     title: 'Подписаться на Instagram проекта',
     description:
@@ -46,15 +48,17 @@ export const tasks = [
   },
   {
     key: TaskList.SHARED_WITH_FRIEND,
+    parentKey: TaskList.SHARED_ABOUT_SOUL,
     type: TaskType.WEEKLY,
     title: 'Отправить сообщение другу',
     description:
-      'Пригласите друга в приложение SOUL, но советуем звать только тех, кому это может быть действительно интересно и полезно',
+      'Позовите друга в SOUL, но советуем звать только тех, кому это интересно. Задание выполнится после регистрации друга',
     goal: 1,
     rewardSp: 0,
   },
   {
     key: TaskList.ADDED_REFLINK_IN_TG_PROFILE,
+    parentKey: TaskList.SHARED_ABOUT_SOUL,
     type: TaskType.WEEKLY,
     title: 'Добавить реферальную ссылку в свой Telegram профиль',
     description:
@@ -68,24 +72,16 @@ export const tasks = [
     title: 'Premium поддержка',
     description:
       'Заработайте дополнительные SOUL points, если у вас есть подписка Telegram Premium',
-    goal: 2,
+    goal: 1,
     rewardSp: 300,
   },
   {
     key: TaskList.VOTED_SOUL_FORUM,
+    parentKey: TaskList.PREMIUM_SUPPORT,
     type: TaskType.WEEKLY,
     title: 'Проголосовать за SOUL forum',
     description:
       'Это поможет нам расширить функционал форума и открыть новые возможности оформления от Telegram',
-    goal: 1,
-    rewardSp: 0,
-  },
-  {
-    key: TaskList.SHARED_STORY_IN_TG,
-    type: TaskType.WEEKLY,
-    title: 'Поделиться историей в Telegram',
-    description:
-      'Расскажите в истории о ближайшей встрече, на которую вы пойдете, и позовите на нее своих друзей',
     goal: 1,
     rewardSp: 0,
   },
