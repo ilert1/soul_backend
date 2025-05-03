@@ -3,12 +3,9 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
-import { generateTestUserId, isResponseValid } from 'test/utils';
+import { isResponseValid } from 'test/utils';
 import { ConfirmParticipationDto } from 'src/modules/event/dto/confirm-participation.dto';
-import {
-  CreateEventRequestDto,
-  UpdateEventRequestDto,
-} from 'src/modules/event/dto/create-event.dto';
+import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
 import { EntryCondition } from '@prisma/client';
 import {
   telegramUserForParticipation,
@@ -24,7 +21,6 @@ describe('EventParticipationController (e2e)', () => {
   let lateEventId: string;
   let activityId: string;
   let activityHash: string;
-  let activityIdForLate: string;
   let activityHashForLate: string;
 
   before(async () => {
@@ -103,7 +99,6 @@ describe('EventParticipationController (e2e)', () => {
       .set('Authorization', `Bearer ${currentUserAccessToken}`)
       .send({ eventId: lateEventId })
       .expect(201);
-    activityIdForLate = activityResponseForLate.body.id;
 
     const hashResponse = await request(server)
       .get(`/activities/qr/${activityResponse.body.id}`)

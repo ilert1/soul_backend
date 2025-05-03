@@ -88,6 +88,33 @@ describe('EventSearchController (e2e)', () => {
       assert.ok(response.body.items.length > 0, 'Список событий пуст');
     });
 
+    it('Поиск событий без результата', async () => {
+      const response = await request(server)
+        .get('/event/search')
+        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
+        .query({
+          latitude: 55.751244,
+          longitude: 37.618423,
+          limit: 10,
+          page: 1,
+          entryCondition: EntryCondition.PAID,
+        })
+        .expect(200);
+
+      assert.ok(
+        Array.isArray(response.body.items),
+        'Items должны быть массивом',
+      );
+      assert.ok(response.body.page, 'page не был возвращен');
+      assert.ok(response.body.pages !== undefined, 'pages не был возвращен');
+      assert.ok(response.body.size, 'size не был возвращен');
+      assert.ok(response.body.total !== undefined, 'total не был возвращен');
+      assert.ok(
+        response.body.items.length === 0,
+        'Список событий должен быть пуст',
+      );
+    });
+
     it('Ошибка 400: Неверные координаты', async () => {
       await request(server)
         .get('/event/search')
