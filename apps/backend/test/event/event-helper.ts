@@ -2,6 +2,8 @@ import { TelegramDataDto } from 'src/modules/auth/dto/telegram-data.dto';
 import { generateTestUserId } from 'test/utils';
 import { v4 as uuid } from 'uuid';
 
+const user = generateTestUserId();
+const userNew = generateTestUserId();
 const userId = generateTestUserId();
 const userIdNew = generateTestUserId();
 const userIdQr = generateTestUserId();
@@ -104,6 +106,30 @@ export const telegramUserForSerchNew: TelegramDataDto = {
     user: {
       ...telegramUserForParticipation.initDataUnsafe.user,
       id: userIdSearchNew.toString(),
+    },
+  },
+};
+
+export const telegramUser: TelegramDataDto = {
+  ...telegramUserForParticipation,
+  initDataUnsafe: {
+    ...telegramUserForParticipation.initDataUnsafe,
+    queryId: uuid(),
+    user: {
+      ...telegramUserForParticipation.initDataUnsafe.user,
+      id: user.toString(),
+    },
+  },
+};
+
+export const telegramUserNew: TelegramDataDto = {
+  ...telegramUserForParticipation,
+  initDataUnsafe: {
+    ...telegramUserForParticipation.initDataUnsafe,
+    queryId: uuid(),
+    user: {
+      ...telegramUserForParticipation.initDataUnsafe.user,
+      id: userNew.toString(),
     },
   },
 };

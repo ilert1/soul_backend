@@ -3,11 +3,10 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
-import { telegramData } from 'test/auth/auth-helper';
 import { generateTestUserId, isResponseValid } from 'test/utils';
 import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
 import { EntryCondition } from '@prisma/client';
-import { telegramDataNew } from 'test/commonData';
+import { telegramUser, telegramUserNew } from './event-helper';
 
 describe('EventUserController (e2e)', () => {
   let app: INestApplication;
@@ -32,7 +31,7 @@ describe('EventUserController (e2e)', () => {
     // Создание первого пользователя для создания события
     const eventCreatorResponse = await request(server)
       .post('/auth/telegram')
-      .send(telegramData)
+      .send(telegramUser)
       .expect(isResponseValid);
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
@@ -68,7 +67,7 @@ describe('EventUserController (e2e)', () => {
     // Создание второго пользователя для активности
     const currentUserResponse = await request(server)
       .post('/auth/telegram')
-      .send(telegramDataNew)
+      .send(telegramUserNew)
       .expect(isResponseValid);
 
     currentUserAccessToken = currentUserResponse.body.accessToken;

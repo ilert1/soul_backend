@@ -5,7 +5,10 @@ import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
 import { generateTestUserId, isResponseValid } from 'test/utils';
 import { ConfirmParticipationDto } from 'src/modules/event/dto/confirm-participation.dto';
-import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
+import {
+  CreateEventRequestDto,
+  UpdateEventRequestDto,
+} from 'src/modules/event/dto/create-event.dto';
 import { EntryCondition } from '@prisma/client';
 import {
   telegramUserForParticipation,
@@ -16,12 +19,13 @@ describe('EventParticipationController (e2e)', () => {
   let app: INestApplication;
   let server: string;
   let eventCreatorAccessToken: string;
-  let eventCreatorId: number = generateTestUserId();
   let currentUserAccessToken: string;
-  let currentUserId: number = generateTestUserId();
   let eventId: string;
+  let lateEventId: string;
   let activityId: string;
   let activityHash: string;
+  let activityIdForLate: string;
+  let activityHashForLate: string;
 
   before(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -41,7 +45,6 @@ describe('EventParticipationController (e2e)', () => {
       .expect(isResponseValid);
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
-    eventCreatorId = eventCreatorResponse.body.id;
 
     const createEventDto: CreateEventRequestDto = {
       title: 'Концерт классической музыки',
@@ -65,8 +68,20 @@ describe('EventParticipationController (e2e)', () => {
       .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
       .send(createEventDto)
       .expect(201);
-
     eventId = eventCreateResponse.body.id;
+
+    // Второе событие (более трех часов до начала)
+    const lateEventCreateResponse = await request(server)
+      .post('/event')
+      .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
+      .send({
+        ...createEventDto,
+        startDate: new Date(Date.now() + 14400000),
+        finishDate: new Date(Date.now() + 14500000),
+      })
+      .expect(201);
+
+    lateEventId = lateEventCreateResponse.body.id;
 
     // Создание второго пользователя для активности
     const currentUserResponse = await request(server)
@@ -75,7 +90,6 @@ describe('EventParticipationController (e2e)', () => {
       .expect(isResponseValid);
 
     currentUserAccessToken = currentUserResponse.body.accessToken;
-    currentUserId = currentUserResponse.body.id;
 
     const activityResponse = await request(server)
       .post('/activities')
@@ -84,12 +98,26 @@ describe('EventParticipationController (e2e)', () => {
       .expect(201);
     activityId = activityResponse.body.id;
 
+    const activityResponseForLate = await request(server)
+      .post('/activities')
+      .set('Authorization', `Bearer ${currentUserAccessToken}`)
+      .send({ eventId: lateEventId })
+      .expect(201);
+    activityIdForLate = activityResponseForLate.body.id;
+
     const hashResponse = await request(server)
       .get(`/activities/qr/${activityResponse.body.id}`)
       .set('Authorization', `Bearer ${currentUserAccessToken}`)
       .expect(200);
 
     activityHash = hashResponse.body.hash;
+
+    const hashResponseforLate = await request(server)
+      .get(`/activities/qr/${activityResponseForLate.body.id}`)
+      .set('Authorization', `Bearer ${currentUserAccessToken}`)
+      .expect(200);
+
+    activityHashForLate = hashResponseforLate.body.hash;
   });
 
   after(async () => {
@@ -111,6 +139,20 @@ describe('EventParticipationController (e2e)', () => {
         .expect(204);
     });
 
+    it('Ошибка 400: до события более трех часов', async () => {
+      const confirmParticipationDto: ConfirmParticipationDto = {
+        eventId: lateEventId,
+        activityHash: activityHashForLate,
+        geoposition: { latitude: 55.751244, longitude: 37.618423 },
+      };
+
+      await request(server)
+        .post('/event/confirm-participation')
+        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
+        .send(confirmParticipationDto)
+        .expect(400);
+    });
+
     it('Ошибка 400: Пользователь не имеет прав на подтверждение участия', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
@@ -121,7 +163,7 @@ describe('EventParticipationController (e2e)', () => {
       // Используем токен другого пользователя
       await request(server)
         .post('/event/confirm-participation')
-        .set('Authorization', `Bearer ${currentUserAccessToken}`) // Токен не создателя события
+        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
         .send(confirmParticipationDto)
         .expect(400);
     });
@@ -175,13 +217,6 @@ describe('EventParticipationController (e2e)', () => {
         activityHash: activityHash,
         geoposition: { latitude: 55.751244, longitude: 37.618423 },
       };
-
-      // Повторное подтверждение участия
-      /*await request(server)
-        .post('/event/confirm-participation')
-        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
-        .send(confirmParticipationDto)
-        .expect(204);*/
 
       await request(server)
         .post('/event/confirm-participation')
