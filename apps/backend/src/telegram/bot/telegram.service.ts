@@ -3,7 +3,7 @@ import { Bot, Context } from 'grammy';
 import { TelegramUserService } from 'src/modules/telegramUser/telegramUser.service';
 import { TranslationService } from './translation.service';
 import { LANGUAGE_CHANGE_COMMAND_ARRAY } from './consts';
-import { TgUserLanguageService } from './tg-user-language.service';
+import { TgUserLanguageService } from '../common/tg-user-language.service';
 import { run } from '@grammyjs/runner';
 
 @Injectable()
