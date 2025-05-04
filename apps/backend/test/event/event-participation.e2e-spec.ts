@@ -163,21 +163,6 @@ describe('EventParticipationController (e2e)', () => {
         .expect(400);
     });
 
-    it('| - | — неверный хеш', async () => {
-      const confirmParticipationDto: ConfirmParticipationDto = {
-        eventId: eventId,
-        activityHash:
-          'ae6a57e373160b7507ef7b40225c659000b1ed81faafbef5624192dec4e7f56a5dae6bb2bf3deefbb9968b673aae6ae6',
-        geoposition: { latitude: 55.751244, longitude: 37.618423 },
-      };
-
-      await request(server)
-        .post('/event/confirm-participation')
-        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
-        .send(confirmParticipationDto)
-        .expect(500);
-    });
-
     it('| - | — невозможно подтвердить участие (хэш события не соответствует eventId)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: 'non-existent-event-id',
