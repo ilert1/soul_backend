@@ -4,9 +4,7 @@ import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
 import { generateTestUserId, isResponseValid } from 'test/utils';
-import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
-import { EntryCondition } from '@prisma/client';
-import { telegramUser, telegramUserNew } from './event-helper';
+import { createEventDto, telegramUser, telegramUserNew } from './event-helper';
 
 describe('EventUserController (e2e)', () => {
   let app: INestApplication;
@@ -36,25 +34,6 @@ describe('EventUserController (e2e)', () => {
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
     eventCreatorId = eventCreatorResponse.body.id;
-
-    const createEventDto: CreateEventRequestDto = {
-      title: 'Концерт классической музыки',
-      description: 'Уникальная возможность насладиться живым исполнением.',
-      startDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-      finishDate: new Date(
-        new Date().setFullYear(new Date().getFullYear() + 1) + 3600000,
-      ),
-      guestLimit: 10,
-      entryCondition: EntryCondition.FREE,
-      bonusDistributionType: 'ALL',
-      place: {
-        name: 'Концертный зал',
-        description: 'Один из лучших залов',
-        latitude: 55.751244,
-        longitude: 37.618423,
-        address: 'г. Москва, ул. Арбат, 10',
-      },
-    };
 
     const eventCreateResponse = await request(server)
       .post('/event')
@@ -91,7 +70,7 @@ describe('EventUserController (e2e)', () => {
   });
 
   describe('GET /event/by-user/:userId', () => {
-    it('Получение событий по ID пользователя', async () => {
+    it('| + | — получение событий по ID пользователя', async () => {
       const response = await request(server)
         .get(`/event/by-user/${eventCreatorId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -134,7 +113,7 @@ describe('EventUserController (e2e)', () => {
       });
     });
 
-    it('Ошибка 404: Пользователь не найден', async () => {
+    it('| - | — пользователь не найден', async () => {
       const nonExistentUserId = 'non-existent-user-id';
 
       await request(server)
@@ -143,7 +122,7 @@ describe('EventUserController (e2e)', () => {
         .expect(404);
     });
 
-    it('Получение событий: фильтр по созданным другим пользователем', async () => {
+    it('| + | — получение событий: фильтр по созданным другим пользователем', async () => {
       const response = await request(server)
         .get(`/event/by-user/${eventCreatorId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -183,7 +162,7 @@ describe('EventUserController (e2e)', () => {
       });
     });
 
-    it('Получение событий: все события текущего пользователя', async () => {
+    it('| + | — получение событий: все события текущего пользователя', async () => {
       const response = await request(server)
         .get(`/event/by-user/${currentUserId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -223,7 +202,7 @@ describe('EventUserController (e2e)', () => {
       });
     });
 
-    it('Получение событий: только созданные текущим пользователем', async () => {
+    it('| + | — получение событий: только созданные текущим пользователем', async () => {
       const response = await request(server)
         .get(`/event/by-user/${currentUserId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -264,7 +243,7 @@ describe('EventUserController (e2e)', () => {
       });
     });
 
-    it('Ошибка 403: выставлен запрет на просмотр событий', async () => {
+    it('| - | — выставлен запрет на просмотр событий', async () => {
       await request(server)
         .patch('/user/me')
         .send({
@@ -286,7 +265,7 @@ describe('EventUserController (e2e)', () => {
         .expect(403);
     });
 
-    it('Получение предстоящих событий с координатами', async () => {
+    it('| + | — получение предстоящих событий с координатами', async () => {
       const response = await request(server)
         .get(`/event/by-user/${eventCreatorId}`)
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -325,7 +304,7 @@ describe('EventUserController (e2e)', () => {
       });
     });
 
-    it('Ошибка 400: Отсутствует долгота и/или широта', async () => {
+    it('| - | — отсутствует долгота и/или широта', async () => {
       await request(server)
         .get(`/event/by-user/${eventCreatorId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)

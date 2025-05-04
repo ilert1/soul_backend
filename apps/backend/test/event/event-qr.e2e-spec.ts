@@ -5,8 +5,11 @@ import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
 import { isResponseValid } from 'test/utils';
 import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
-import { EntryCondition } from '@prisma/client';
-import { telegramUserForQR, telegramUserForQRNew } from './event-helper';
+import {
+  createEventDto,
+  telegramUserForQR,
+  telegramUserForQRNew,
+} from './event-helper';
 
 describe('EventQrController (e2e)', () => {
   let app: INestApplication;
@@ -33,27 +36,16 @@ describe('EventQrController (e2e)', () => {
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
 
-    const createEventDto: CreateEventRequestDto = {
-      title: 'Концерт классической музыки',
-      description: 'Уникальная возможность насладиться живым исполнением.',
+    const createNewEventDto: CreateEventRequestDto = {
+      ...createEventDto,
       startDate: new Date(Date.now() + 20000),
       finishDate: new Date(Date.now() + 600000),
-      guestLimit: 10,
-      entryCondition: EntryCondition.FREE,
-      bonusDistributionType: 'ALL',
-      place: {
-        name: 'Концертный зал',
-        description: 'Один из лучших залов',
-        latitude: 55.751244,
-        longitude: 37.618423,
-        address: 'г. Москва, ул. Арбат, 10',
-      },
     };
 
     const eventCreateResponse = await request(server)
       .post('/event')
       .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
-      .send(createEventDto)
+      .send(createNewEventDto)
       .expect(201);
 
     eventId = eventCreateResponse.body.id;
@@ -71,7 +63,7 @@ describe('EventQrController (e2e)', () => {
   });
 
   describe('GET /event/qr/:eventId', () => {
-    it('Получение хэша мероприятия для формирования QR ссылки другим юзером', async () => {
+    it('| + | — получение хэша мероприятия для формирования QR ссылки другим юзером', async () => {
       const response = await request(server)
         .get(`/event/qr/${eventId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -80,14 +72,14 @@ describe('EventQrController (e2e)', () => {
       assert.ok(response.body.hash, 'hash не был возвращен');
     });
 
-    it('Ошибка 404: Неверный eventId', async () => {
+    it('| - | — неверный eventId', async () => {
       await request(server)
         .get('/event/qr/non-existent-activity-id')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
         .expect(404);
     });
 
-    it('Получение хэша мероприятия для формирования QR ссылки создателем', async () => {
+    it('| + | — получение хэша мероприятия для формирования QR ссылки создателем', async () => {
       await request(server)
         .get(`/event/qr/${eventId}`)
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)

@@ -259,6 +259,9 @@ export class EventCrudService {
             },
           },
         },
+        guestLimit: true,
+        deposit: true,
+        bonusDistributionN: true,
         ratingDetails: {
           select: {
             votesForOne: true,

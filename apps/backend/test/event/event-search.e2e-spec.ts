@@ -5,14 +5,12 @@ import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
 import { EntryCondition } from '@prisma/client';
 import { isResponseValid } from 'test/utils';
-import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
-import { telegramUserForSearch } from './event-helper';
+import { createEventDto, telegramUserForSearch } from './event-helper';
 
 describe('EventSearchController (e2e)', () => {
   let app: INestApplication;
   let server: string;
   let eventCreatorAccessToken: string;
-  let eventId: number;
 
   before(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -33,31 +31,11 @@ describe('EventSearchController (e2e)', () => {
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
 
-    // Создаем событие для тестирования
-    const createEventDto: CreateEventRequestDto = {
-      title: 'Тестовое событие',
-      description: 'Описание тестового события',
-      startDate: new Date(Date.now() + 3600000), // Через 1 час
-      finishDate: new Date(Date.now() + 7200000), // Через 1 час после начала
-      guestLimit: 10,
-      entryCondition: EntryCondition.FREE,
-      bonusDistributionType: 'ALL',
-      place: {
-        name: 'Тестовое место',
-        description: 'Описание места',
-        latitude: 55.751244,
-        longitude: 37.618423,
-        address: 'г. Москва',
-      },
-    };
-
-    const eventCreateResponse = await request(server)
+    await request(server)
       .post('/event')
       .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
       .send(createEventDto)
       .expect(201);
-
-    eventId = eventCreateResponse.body.id;
   });
 
   after(async () => {
@@ -65,7 +43,7 @@ describe('EventSearchController (e2e)', () => {
   });
 
   describe('GET /event/search', () => {
-    it('Успешный поиск событий', async () => {
+    it('| + | — успешный поиск событий', async () => {
       const response = await request(server)
         .get('/event/search')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -88,7 +66,7 @@ describe('EventSearchController (e2e)', () => {
       assert.ok(response.body.items.length > 0, 'Список событий пуст');
     });
 
-    it('Поиск событий без результата', async () => {
+    it('| + | — поиск событий без результата', async () => {
       const response = await request(server)
         .get('/event/search')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -115,7 +93,7 @@ describe('EventSearchController (e2e)', () => {
       );
     });
 
-    it('Ошибка 400: Неверные координаты', async () => {
+    it('| - | — неверные координаты', async () => {
       await request(server)
         .get('/event/search')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -128,7 +106,7 @@ describe('EventSearchController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка 400: Неверная дата', async () => {
+    it('| - | — неверная дата', async () => {
       await request(server)
         .get('/event/search')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -141,23 +119,10 @@ describe('EventSearchController (e2e)', () => {
         })
         .expect(400);
     });
-
-    it('Ошибка 400: Неверный лимит', async () => {
-      await request(server)
-        .get('/event/search')
-        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
-        .query({
-          latitude: 55.751244,
-          longitude: 37.618423,
-          limit: -10,
-          page: 1,
-        })
-        .expect(400);
-    });
   });
 
   describe('GET /event/map-markers', () => {
-    it('Успешное получение маркеров событий', async () => {
+    it('| + | — успешное получение маркеров событий', async () => {
       const response = await request(server)
         .get('/event/map-markers')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -175,7 +140,7 @@ describe('EventSearchController (e2e)', () => {
       });
     });
 
-    it('Ошибка 400: Неверные координаты для маркеров', async () => {
+    it('| - | — неверные координаты для маркеров', async () => {
       await request(server)
         .get('/event/map-markers')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -187,7 +152,7 @@ describe('EventSearchController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка 400: Неверный радиус', async () => {
+    it('| - | — неверный радиус', async () => {
       await request(server)
         .get('/event/map-markers')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)

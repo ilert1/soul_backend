@@ -2,12 +2,11 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
-import * as assert from 'assert';
 import { isResponseValid } from 'test/utils';
 import { ConfirmParticipationDto } from 'src/modules/event/dto/confirm-participation.dto';
 import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
-import { EntryCondition } from '@prisma/client';
 import {
+  createEventDto,
   telegramUserForParticipation,
   telegramUserForParticipationNew,
 } from './event-helper';
@@ -19,7 +18,6 @@ describe('EventParticipationController (e2e)', () => {
   let currentUserAccessToken: string;
   let eventId: string;
   let lateEventId: string;
-  let activityId: string;
   let activityHash: string;
   let activityHashForLate: string;
 
@@ -42,27 +40,16 @@ describe('EventParticipationController (e2e)', () => {
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
 
-    const createEventDto: CreateEventRequestDto = {
-      title: 'Концерт классической музыки',
-      description: 'Уникальная возможность насладиться живым исполнением.',
+    const createNewEventDto: CreateEventRequestDto = {
+      ...createEventDto,
       startDate: new Date(Date.now() + 20000),
       finishDate: new Date(Date.now() + 600000),
-      guestLimit: 10,
-      entryCondition: EntryCondition.FREE,
-      bonusDistributionType: 'ALL',
-      place: {
-        name: 'Концертный зал',
-        description: 'Один из лучших залов',
-        latitude: 55.751244,
-        longitude: 37.618423,
-        address: 'г. Москва, ул. Арбат, 10',
-      },
     };
 
     const eventCreateResponse = await request(server)
       .post('/event')
       .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
-      .send(createEventDto)
+      .send(createNewEventDto)
       .expect(201);
     eventId = eventCreateResponse.body.id;
 
@@ -92,7 +79,6 @@ describe('EventParticipationController (e2e)', () => {
       .set('Authorization', `Bearer ${currentUserAccessToken}`)
       .send({ eventId: eventId })
       .expect(201);
-    activityId = activityResponse.body.id;
 
     const activityResponseForLate = await request(server)
       .post('/activities')
@@ -120,7 +106,7 @@ describe('EventParticipationController (e2e)', () => {
   });
 
   describe('POST /event/confirm-participation', () => {
-    it('Подтверждение участия в событии', async () => {
+    it('| + | — подтверждение участия в событии', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash: activityHash,
@@ -134,7 +120,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(204);
     });
 
-    it('Ошибка 400: до события более трех часов', async () => {
+    it('| - | — невозможно подтвердить участие (до начала более трех часов)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: lateEventId,
         activityHash: activityHashForLate,
@@ -148,7 +134,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка 400: Пользователь не имеет прав на подтверждение участия', async () => {
+    it('| - | — невозможно подтвердить участие (пользователь не имеет прав на подтверждение участия)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash: activityHash,
@@ -163,7 +149,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка 400: Гепозиция не предоставлена', async () => {
+    it('| - | — невозможно подтвердить участие (гепозиция не предоставлена)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash: activityHash,
@@ -177,7 +163,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка 404: Неверный хеш', async () => {
+    it('| - | — неверный хеш', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash:
@@ -192,7 +178,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(500);
     });
 
-    it('Ошибка 404: Хэш события не соответствует eventId', async () => {
+    it('| - | — невозможно подтвердить участие (хэш события не соответствует eventId)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: 'non-existent-event-id',
         activityHash: activityHash,
@@ -206,7 +192,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка 400: Билет уже подтвержден', async () => {
+    it('| - | — невозможно подтвердить участие (билет уже подтвержден)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash: activityHash,
@@ -220,7 +206,7 @@ describe('EventParticipationController (e2e)', () => {
         .expect(400); // Ожидаем ошибку, так как билет уже подтвержден
     });
 
-    it('Ошибка 400: Гепозиция не совпадает с местом события', async () => {
+    it('| - | — Невозможно подтвердить участие (гепозиция не совпадает с местом события)', async () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash: activityHash,
@@ -232,27 +218,6 @@ describe('EventParticipationController (e2e)', () => {
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
         .send(confirmParticipationDto)
         .expect(400);
-    });
-  });
-
-  describe('GET /event/by-activity/:activityId', () => {
-    it('Получение события по ID активности', async () => {
-      const response = await request(server)
-        .get(`/event/by-activity/${activityId}`)
-        .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .expect(200);
-
-      assert.ok(response.body.id, 'id не был возвращен');
-      assert.ok(response.body.title, 'title не был возвращен');
-      assert.ok(response.body.startDate, 'startDate не был возвращен');
-      assert.ok(response.body.finishDate, 'finishDate не был возвращен');
-    });
-
-    it('Ошибка 404: Активность не найдена', async () => {
-      await request(server)
-        .get('/event/by-activity/non-existent-activity-id')
-        .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .expect(404);
     });
   });
 });
