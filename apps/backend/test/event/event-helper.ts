@@ -1,4 +1,10 @@
+import { EntryCondition } from '@prisma/client';
 import { TelegramDataDto } from 'src/modules/auth/dto/telegram-data.dto';
+import {
+  CreateEventRequestDto,
+  UpdateEventRequestDto,
+} from 'src/modules/event/dto/create-event.dto';
+import { telegramData } from 'test/auth/auth-helper';
 import { generateTestUserId } from 'test/utils';
 import { v4 as uuid } from 'uuid';
 
@@ -10,126 +16,155 @@ const userIdQr = generateTestUserId();
 const userIdQrNew = generateTestUserId();
 const userIdSearch = generateTestUserId();
 const userIdSearchNew = generateTestUserId();
-const chatId = userId + 1000000;
+const userIdCreate = generateTestUserId();
+const userIdCreateNew = generateTestUserId();
 
-export const telegramUserForParticipation: TelegramDataDto = {
-  initData: 'mockedInitData',
+export const telegramUserForCreating: TelegramDataDto = {
+  ...telegramData,
   initDataUnsafe: {
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
+      ...telegramData.initDataUnsafe.user,
+      id: userIdCreate.toString(),
+    },
+  },
+};
+
+export const telegramUserForCreatingNew: TelegramDataDto = {
+  ...telegramData,
+  initDataUnsafe: {
+    ...telegramData.initDataUnsafe,
+    queryId: uuid(),
+    user: {
+      ...telegramData.initDataUnsafe.user,
+      id: userIdCreateNew.toString(),
+    },
+  },
+};
+
+export const telegramUserForParticipation: TelegramDataDto = {
+  ...telegramData,
+  initDataUnsafe: {
+    ...telegramData.initDataUnsafe,
+    queryId: uuid(),
+    user: {
+      ...telegramData.initDataUnsafe.user,
       id: userId.toString(),
-      username: 'johndoe',
-      firstName: 'John',
-      lastName: 'Doe',
-      isBot: false,
-      languageCode: 'en',
-      isPremium: false,
     },
-    chat: {
-      id: chatId,
-      title: 'Mocked Chat',
-      username: 'mockedchat',
-      type: 'group',
-    },
-    signature: 'signature',
-    authDate: new Date().toISOString(),
-    hash: 'mockedHash',
   },
 };
 
 export const telegramUserForParticipationNew: TelegramDataDto = {
-  initData: 'mockedInitData',
+  ...telegramData,
   initDataUnsafe: {
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
+      ...telegramData.initDataUnsafe.user,
       id: userIdNew.toString(),
-      username: 'johndoe',
-      firstName: 'John',
-      lastName: 'Doe',
-      isBot: false,
-      languageCode: 'en',
-      isPremium: false,
     },
-    chat: {
-      id: chatId,
-      title: 'Mocked Chat',
-      username: 'mockedchat',
-      type: 'group',
-    },
-    signature: 'signature',
-    authDate: new Date().toISOString(),
-    hash: 'mockedHash',
   },
 };
 
 export const telegramUserForQR: TelegramDataDto = {
-  ...telegramUserForParticipation,
+  ...telegramData,
   initDataUnsafe: {
-    ...telegramUserForParticipation.initDataUnsafe,
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
-      ...telegramUserForParticipation.initDataUnsafe.user,
+      ...telegramData.initDataUnsafe.user,
       id: userIdQr.toString(),
     },
   },
 };
 
 export const telegramUserForQRNew: TelegramDataDto = {
-  ...telegramUserForParticipation,
+  ...telegramData,
   initDataUnsafe: {
-    ...telegramUserForParticipation.initDataUnsafe,
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
-      ...telegramUserForParticipation.initDataUnsafe.user,
+      ...telegramData.initDataUnsafe.user,
       id: userIdQrNew.toString(),
     },
   },
 };
 
 export const telegramUserForSearch: TelegramDataDto = {
-  ...telegramUserForParticipation,
+  ...telegramData,
   initDataUnsafe: {
-    ...telegramUserForParticipation.initDataUnsafe,
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
-      ...telegramUserForParticipation.initDataUnsafe.user,
+      ...telegramData.initDataUnsafe.user,
       id: userIdSearch.toString(),
     },
   },
 };
 
 export const telegramUserForSerchNew: TelegramDataDto = {
-  ...telegramUserForParticipation,
+  ...telegramData,
   initDataUnsafe: {
-    ...telegramUserForParticipation.initDataUnsafe,
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
-      ...telegramUserForParticipation.initDataUnsafe.user,
+      ...telegramData.initDataUnsafe.user,
       id: userIdSearchNew.toString(),
     },
   },
 };
 
 export const telegramUser: TelegramDataDto = {
-  ...telegramUserForParticipation,
+  ...telegramData,
   initDataUnsafe: {
-    ...telegramUserForParticipation.initDataUnsafe,
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
-      ...telegramUserForParticipation.initDataUnsafe.user,
+      ...telegramData.initDataUnsafe.user,
       id: user.toString(),
     },
   },
 };
 
 export const telegramUserNew: TelegramDataDto = {
-  ...telegramUserForParticipation,
+  ...telegramData,
   initDataUnsafe: {
-    ...telegramUserForParticipation.initDataUnsafe,
+    ...telegramData.initDataUnsafe,
     queryId: uuid(),
     user: {
-      ...telegramUserForParticipation.initDataUnsafe.user,
+      ...telegramData.initDataUnsafe.user,
       id: userNew.toString(),
     },
   },
+};
+
+export const createEventDto: CreateEventRequestDto = {
+  title: 'Концерт классической музыки',
+  description: 'Уникальная возможность насладиться живым исполнением.',
+  startDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+  finishDate: new Date(
+    new Date().setFullYear(new Date().getFullYear() + 1) + 3600000,
+  ), // Увеличиваем timestamp на 1 час
+  guestLimit: 10,
+  entryCondition: EntryCondition.FREE,
+  bonusDistributionType: 'ALL',
+  place: {
+    name: 'Концертный зал',
+    description: 'Один из лучших залов',
+    latitude: 55.751244,
+    longitude: 37.618423,
+    address: 'г. Москва, ул. Арбат, 10',
+  },
+};
+
+export const updateEventDto: UpdateEventRequestDto = {
+  title: 'Обновленный концерт классической музыки',
+  description: 'Теперь с участием знаменитого дирижера',
+  startDate: new Date(
+    new Date().setFullYear(new Date().getFullYear() + 1) + 1600000,
+  ),
+  finishDate: new Date(
+    new Date().setFullYear(new Date().getFullYear() + 1) + 3600000,
+  ),
 };

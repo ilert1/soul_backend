@@ -8,14 +8,21 @@ import {
   CreateEventRequestDto,
   UpdateEventRequestDto,
 } from 'src/modules/event/dto/create-event.dto';
-import { telegramData } from 'test/auth/auth-helper';
 import { isResponseValid } from 'test/utils';
+import {
+  createEventDto,
+  telegramUserForCreating,
+  telegramUserForCreatingNew,
+  updateEventDto,
+} from './event-helper';
 
 describe('EventCrudController (e2e)', () => {
   let app: INestApplication;
   let server: string;
   let accessToken: string;
   let createdEventId: string;
+  let createdImageId: string;
+  let anotherAcessToken: string;
 
   before(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -30,48 +37,65 @@ describe('EventCrudController (e2e)', () => {
 
     const userResponse = await request(server)
       .post('/auth/telegram')
-      .send(telegramData)
+      .send(telegramUserForCreating)
       .expect(isResponseValid);
 
     accessToken = userResponse.body.accessToken;
+
+    const anotherUserResponse = await request(server)
+      .post('/auth/telegram')
+      .send(telegramUserForCreatingNew)
+      .expect(isResponseValid);
+
+    anotherAcessToken = anotherUserResponse.body.accessToken;
   });
 
   after(async () => {
     await app.close();
   });
 
-  describe('POST /event', () => {
-    it('Создание события', async () => {
-      const createEventDto: CreateEventRequestDto = {
-        title: 'Концерт классической музыки',
-        description: 'Уникальная возможность насладиться живым исполнением.',
-        startDate: new Date(
-          new Date().setFullYear(new Date().getFullYear() + 1),
-        ),
-        finishDate: new Date(
-          new Date().setFullYear(new Date().getFullYear() + 1) + 3600000,
-        ), // Увеличиваем timestamp на 1 час
-        guestLimit: 10,
-        entryCondition: EntryCondition.FREE,
-        bonusDistributionType: 'ALL',
-        place: {
-          name: 'Концертный зал',
-          description: 'Один из лучших залов',
-          latitude: 55.751244,
-          longitude: 37.618423,
-          address: 'г. Москва, ул. Арбат, 10',
-        },
-      };
+  describe('POST /images/upload', () => {
+    it('| + | — создание изображения', async () => {
+      const base64Image =
+        'iVBORw0KGgoAAAANSUhEUgAAAAAAAAABCAQAAAABi8iAAAAAAElFTkSuQmCC';
+      const imageBuffer = Buffer.from(base64Image, 'base64');
 
+      const response = await request(server)
+        .post('/images/upload')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .attach('file', imageBuffer, {
+          filename: 'test-image.png',
+          contentType: 'image/png',
+        })
+        .expect(201);
+
+      assert.ok(response.body.id, 'id не вернулся');
+      assert.ok(response.body.name, 'name не вернулся');
+      assert.ok(response.body.data, 'data не вернулся');
+      assert.strictEqual(
+        response.body.name,
+        'test-image.png',
+        'name не совпадает',
+      );
+      createdImageId = response.body.id;
+    });
+  });
+
+  describe('POST /event', () => {
+    it('| + | — создание события', async () => {
       const response = await request(server)
         .post('/event')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(createEventDto)
+        .send({
+          ...createEventDto,
+          imageId: createdImageId,
+        })
         .expect(201);
 
       assert.ok(response.body.id, 'id не вернулся');
       assert.ok(response.body.title, 'title не вернулся');
       assert.ok(response.body.description, 'description не вернулся');
+      assert.ok(response.body.imageId !== undefined, 'imageId не вернулся');
       assert.ok(response.body.startDate, 'startDate не вернулся');
       assert.ok(response.body.finishDate, 'finishDate не вернулся');
       assert.ok(response.body.entryCondition, 'entryCondition не вернулся');
@@ -100,138 +124,81 @@ describe('EventCrudController (e2e)', () => {
       createdEventId = response.body.id; // Храним ID созданного события для дальнейших тестов
     });
 
-    it('Ошибка при создании события: Дата начала события не может быть в прошлом', async () => {
-      const createEventDto: CreateEventRequestDto = {
-        title: 'Концерт музыки',
-        description: 'Описание события',
+    it('| - | — дата начала события не может быть в прошлом', async () => {
+      const createEventWithErrorDto: CreateEventRequestDto = {
+        ...createEventDto,
         startDate: new Date(Date.now() - 10000),
         finishDate: new Date(Date.now()),
-        guestLimit: 10,
-        entryCondition: EntryCondition.FREE,
-        bonusDistributionType: 'ALL',
-        place: {
-          name: 'Место проведения',
-          description: 'Описание места',
-          latitude: 55.751244,
-          longitude: 37.618423,
-          address: 'г. Москва, ул. Арбат, 10',
-        },
       };
 
       await request(server)
         .post('/event')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(createEventDto)
+        .send(createEventWithErrorDto)
         .expect(400);
     });
 
-    it('Ошибка при создании события: Дата окончания события не может быть меньше даты начала', async () => {
-      const createEventDto: CreateEventRequestDto = {
-        title: 'Концерт музыки',
-        description: 'Описание события',
+    it('| - | — дата окончания события не может быть меньше даты начала', async () => {
+      const createEventWithErrorDto: CreateEventRequestDto = {
+        ...createEventDto,
         startDate: new Date(Date.now() + 20000),
         finishDate: new Date(Date.now() + 10000), // дата окончания раньше даты начала
-        guestLimit: 10,
-        entryCondition: EntryCondition.FREE,
-        bonusDistributionType: 'ALL',
-        place: {
-          name: 'Место проведения',
-          description: 'Описание места',
-          latitude: 55.751244,
-          longitude: 37.618423,
-          address: 'г. Москва, ул. Арбат, 10',
-        },
       };
 
       await request(server)
         .post('/event')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(createEventDto)
+        .send(createEventWithErrorDto)
         .expect(400);
     });
 
-    it('Ошибка при создании события: Разница между началом и окончанием не может превышать 24 часа', async () => {
-      const createEventDto: CreateEventRequestDto = {
-        title: 'Долгий концерт',
-        description: 'Описание события',
+    it('| - | — разница между началом и окончанием не может превышать 24 часа', async () => {
+      const createEventWithErrorDto: CreateEventRequestDto = {
+        ...createEventDto,
         startDate: new Date(Date.now() + 1000),
         finishDate: new Date(Date.now() + 25 * 60 * 60 * 1000 + 1000), // 25 часов
-        guestLimit: 10,
-        entryCondition: EntryCondition.FREE,
-        bonusDistributionType: 'ALL',
-        place: {
-          name: 'Место проведения',
-          description: 'Описание места',
-          latitude: 55.751244,
-          longitude: 37.618423,
-          address: 'г. Москва, ул. Арбат, 10',
-        },
       };
 
       await request(server)
         .post('/event')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(createEventDto)
+        .send(createEventWithErrorDto)
         .expect(400);
     });
 
-    it('Ошибка при создании события: При платном участии обязательны поля currencyId и entryFee', async () => {
-      const createEventDto: CreateEventRequestDto = {
-        title: 'Платный концерт',
-        description: 'Описание события',
-        startDate: new Date(Date.now() + 10000),
-        finishDate: new Date(Date.now() + 20000),
-        guestLimit: 10,
+    it('| - | — при платном участии обязательны поля currencyId и entryFee', async () => {
+      const createEventWithErrorDto: CreateEventRequestDto = {
+        ...createEventDto,
         entryCondition: EntryCondition.PAID, // платное участие
-        bonusDistributionType: 'ALL',
         entryFee: undefined, // обязательные поля не указаны
         currencyId: undefined, // обязательные поля не указаны
-        place: {
-          name: 'Место проведения',
-          description: 'Описание места',
-          latitude: 55.751244,
-          longitude: 37.618423,
-          address: 'г. Москва, ул. Арбат, 10',
-        },
       };
 
       await request(server)
         .post('/event')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(createEventDto)
+        .send(createEventWithErrorDto)
         .expect(400);
     });
 
-    it('Ошибка при создании события: При бесплатном участии не должны быть указаны поля currencyId и entryFee', async () => {
-      const createEventDto: CreateEventRequestDto = {
-        title: 'Бесплатный концерт',
-        description: 'Описание события',
-        startDate: new Date(Date.now() + 10000),
-        finishDate: new Date(Date.now() + 20000),
-        guestLimit: 10,
+    it('| - | — при бесплатном участии не должны быть указаны currencyId и entryFee', async () => {
+      const createEventWithErrorDto: CreateEventRequestDto = {
+        ...createEventDto,
         entryCondition: EntryCondition.FREE, // бесплатное участие
-        bonusDistributionType: 'ALL',
         entryFee: 0, // не должно быть указано
         currencyId: 5,
-        place: {
-          name: 'Место проведения',
-          description: 'Описание места',
-          latitude: 55.751244,
-          longitude: 37.618423,
-          address: 'г. Москва, ул. Арбат, 10',
-        },
       };
 
       await request(server)
         .post('/event')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(createEventDto)
+        .send(createEventWithErrorDto)
         .expect(400);
     });
   });
 
   describe('GET /event/:eventId', () => {
-    it('Получение события по ID', async () => {
+    it('| + | — получение события по ID', async () => {
       const response = await request(server)
         .get(`/event/${createdEventId}`)
         .set('Authorization', `Bearer ${accessToken}`)
@@ -254,23 +221,27 @@ describe('EventCrudController (e2e)', () => {
       );
       assert.ok(response.body.currency !== undefined, 'currency не вернулся');
       assert.ok(response.body.place !== undefined, 'place не вернулся');
-      // Не возвращаются поля dto: guestLimit, wallet, deposit, bonusDistributionN
+      assert.ok(response.body.deposit !== undefined, 'deposit не вернулся');
+      assert.ok(
+        response.body.guestLimit !== undefined,
+        'guestLimit не вернулся',
+      );
+      assert.ok(
+        response.body.bonusDistributionN !== undefined,
+        'bonusDistributionN не вернулся',
+      );
+      // Не возвращаются поля dto: wallet
+    });
+    it('| - | — получение несуществующего события', async () => {
+      await request(server)
+        .get(`/event/nonexistent-id`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(404);
     });
   });
 
-  describe('PATCH /event/eventId', () => {
-    it('Обновление события', async () => {
-      const updateEventDto: UpdateEventRequestDto = {
-        title: 'Обновленный концерт классической музыки',
-        description: 'Теперь с участием знаменитого дирижера',
-        startDate: new Date(
-          new Date().setFullYear(new Date().getFullYear() + 1) + 1600000,
-        ),
-        finishDate: new Date(
-          new Date().setFullYear(new Date().getFullYear() + 1) + 3600000,
-        ),
-      };
-
+  describe('PATCH /event/:eventId', () => {
+    it('| + | — обновление события', async () => {
       const response = await request(server)
         .patch(`/event/${createdEventId}`)
         .set('Authorization', `Bearer ${accessToken}`)
@@ -308,7 +279,20 @@ describe('EventCrudController (e2e)', () => {
       // Не возвращаются поля dto: averageRating, wallet, bonusDistributionN, creator, distance, confirmedGuests
     });
 
-    it('Ошибка при изменении события: Дата начала события не может быть в прошлом', async () => {
+    it('| - | — обновление события не создателем', async () => {
+      const updateEventDto: UpdateEventRequestDto = {
+        title: 'Обновленный концерт классической музыки',
+        description: 'Теперь с участием знаменитого дирижера',
+      };
+
+      await request(server)
+        .patch(`/event/${createdEventId}`)
+        .set('Authorization', `Bearer ${anotherAcessToken}`)
+        .send(updateEventDto)
+        .expect(404);
+    });
+
+    it('| - | — дата начала события не может быть в прошлом', async () => {
       const updateEventDto: UpdateEventRequestDto = {
         title: 'Обновленный концерт классической музыки',
         description: 'Теперь с участием знаменитого дирижера',
@@ -323,7 +307,7 @@ describe('EventCrudController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка при изменении события: Дата окончания события не может быть раньше даты начала', async () => {
+    it('| - | — дата окончания события не может быть раньше даты начала', async () => {
       const updateEventDto: UpdateEventRequestDto = {
         startDate: new Date(Date.now() + 200000),
         finishDate: new Date(Date.now() + 100000),
@@ -336,7 +320,7 @@ describe('EventCrudController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка при изменении события: Новая дата окончания события не может быть раньше прежней даты начала', async () => {
+    it('| - | — новая дата окончания события не может быть раньше прежней даты начала', async () => {
       const updateEventDto: UpdateEventRequestDto = {
         finishDate: new Date(
           new Date().setFullYear(new Date().getFullYear() + 1),
@@ -350,7 +334,7 @@ describe('EventCrudController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка при изменении события: Новая дата начала события не может быть позже прежней даты окончания', async () => {
+    it('| - | — новая дата начала события не может быть позже прежней даты окончания', async () => {
       const updateEventDto: UpdateEventRequestDto = {
         startDate: new Date(
           new Date().setFullYear(new Date().getFullYear() + 1) + 5600000,
@@ -364,7 +348,7 @@ describe('EventCrudController (e2e)', () => {
         .expect(400);
     });
 
-    it('Ошибка при создании события: Разница между началом и окончанием не может превышать 24 часа', async () => {
+    it('| - | — разница между началом и окончанием не может быть больше 24 часов', async () => {
       const updateEventDto: UpdateEventRequestDto = {
         title: 'Долгий концерт',
         description: 'Описание события',
@@ -380,8 +364,8 @@ describe('EventCrudController (e2e)', () => {
     });
   });
 
-  describe('DELETE /event/eventId', () => {
-    it('Удаление события', async () => {
+  describe('DELETE /event/:eventId', () => {
+    it('| + | — удаление события', async () => {
       const response = await request(server)
         .delete(`/event/${createdEventId}`)
         .set('Authorization', `Bearer ${accessToken}`)
@@ -389,14 +373,31 @@ describe('EventCrudController (e2e)', () => {
 
       assert.strictEqual(response.status, 200, 'Событие не было удалено');
     });
-  });
 
-  describe('Получение несуществующего события', () => {
-    it('Получение события по ID (404)', async () => {
-      await request(server)
-        .get(`/event/nonexistent-id`)
+    it('| - | — удаление события не создателем', async () => {
+      const response = await request(server)
+        .delete(`/event/${createdEventId}`)
+        .set('Authorization', `Bearer ${anotherAcessToken}`)
+        .expect(404);
+
+      assert.strictEqual(
+        response.status,
+        404,
+        'Событие для удаления не должно быть найдено',
+      );
+    });
+
+    it('| - | — удаление несуществующего события', async () => {
+      const response = await request(server)
+        .delete('/event/not-existing-event')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(404);
+
+      assert.strictEqual(
+        response.status,
+        404,
+        'Событие для удаления не должно быть найдено',
+      );
     });
   });
 });
