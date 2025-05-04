@@ -93,8 +93,11 @@ export class ActivityController {
   })
   @ApiResponse({ status: 200, description: 'Активность успешно удалена.' })
   @ApiResponse({ status: 404, description: 'Активность не найдена.' })
-  async deleteActivityById(@Param('activityId') activityId: string) {
-    return await this.activityService.deleteActivityById(activityId);
+  async deleteActivityById(
+    @User() user: UserPayload,
+    @Param('activityId') activityId: string,
+  ) {
+    return await this.activityService.deleteActivityById(activityId, user.id);
   }
 
   @Post('rate/:activityId')

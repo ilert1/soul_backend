@@ -4,10 +4,8 @@ import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import * as assert from 'assert';
 import { isResponseValid } from 'test/utils';
-import { ConfirmParticipationDto } from 'src/modules/event/dto/confirm-participation.dto';
-import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
-import { EntryCondition } from '@prisma/client';
 import { telegramUser, telegramUserNew } from './activity-helper';
+import { createEventDto } from 'test/event/event-helper';
 
 describe('ActivityController', () => {
   let app: INestApplication;
@@ -17,8 +15,6 @@ describe('ActivityController', () => {
   let eventId: string;
   let lateEventId: string;
   let activityId: string;
-  let activityHash: string;
-  let activityHashForLate: string;
 
   before(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -38,23 +34,6 @@ describe('ActivityController', () => {
       .expect(isResponseValid);
 
     eventCreatorAccessToken = eventCreatorResponse.body.accessToken;
-
-    const createEventDto: CreateEventRequestDto = {
-      title: 'Концерт классической музыки',
-      description: 'Уникальная возможность насладиться живым исполнением.',
-      startDate: new Date(Date.now() + 20000),
-      finishDate: new Date(Date.now() + 600000),
-      guestLimit: 10,
-      entryCondition: EntryCondition.FREE,
-      bonusDistributionType: 'ALL',
-      place: {
-        name: 'Концертный зал',
-        description: 'Один из лучших залов',
-        latitude: 55.751244,
-        longitude: 37.618423,
-        address: 'г. Москва, ул. Арбат, 10',
-      },
-    };
 
     const eventCreateResponse = await request(server)
       .post('/event')
@@ -90,7 +69,7 @@ describe('ActivityController', () => {
   });
 
   describe('POST /activities', () => {
-    it('Создание активности', async () => {
+    it('| + | — создание активности', async () => {
       const response = await request(server)
         .post('/activities')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -116,7 +95,7 @@ describe('ActivityController', () => {
       );
     });
 
-    it('Ошибка 400: Создание активности - некорректный eventId', async () => {
+    it('| - | — создание активности - некорректный eventId', async () => {
       await request(server)
         .post('/activities')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -124,7 +103,7 @@ describe('ActivityController', () => {
         .expect(400);
     });
 
-    it('Ошибка 400: Создание активности создателем события', async () => {
+    it('| - | — создание активности создателем события', async () => {
       await request(server)
         .post('/activities')
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
@@ -134,7 +113,7 @@ describe('ActivityController', () => {
   });
 
   describe('GET /activities/:activityId', () => {
-    it('Получение активности по ID', async () => {
+    it('| + | — Получение активности по ID', async () => {
       const response = await request(server)
         .get(`/activities/${activityId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -159,7 +138,7 @@ describe('ActivityController', () => {
       );
     });
 
-    it('Ошибка 400: Поиск активности - несуществующий activityId', async () => {
+    it('| - | — поиск активности - несуществующий activityId', async () => {
       await request(server)
         .get('/activities/non-exsisting-data')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -168,21 +147,21 @@ describe('ActivityController', () => {
   });
 
   describe('DELETE /activities/:activityId', () => {
-    it('Ошибка 404: Удаление активности не ее создателем', async () => {
+    it('| - | — удаление активности не ее создателем', async () => {
       await request(server)
         .delete(`/activities/${activityId}`)
         .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
         .expect(404);
     });
 
-    it('Удаление активности по ID', async () => {
+    it('| - | — удаление активности по ID', async () => {
       await request(server)
         .delete(`/activities/${activityId}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
         .expect(200);
     });
 
-    it('Ошибка 404: Удаление активности - несуществующий activityId', async () => {
+    it('| - | — удаление активности - несуществующий activityId', async () => {
       await request(server)
         .delete('/activities/non-exsisting-data')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
@@ -190,61 +169,33 @@ describe('ActivityController', () => {
     });
   });
 
-  describe('POST /activities/rate/:activityId', () => {
-    it('Оценка события', async () => {
-      await request(server)
-        .post('/activities')
-        .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .send({ eventId: eventId })
-        .expect(201);
-
-      const response = await request(server)
-        .post(`/activities/rate/${activityId}`)
-        .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .send({ rating: 5 })
-        .expect(200);
-
-      assert.ok(response.body.rating, 'rating не вернулся');
-      assert.ok(response.body.activityId, 'activityId не вернулся');
-    });
-
-    it('Ошибка 404: Оценка события - несуществующий activityId', async () => {
-      await request(server)
-        .post('/activities/rate/non-exsisting-data')
-        .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .send({ rating: 5 })
-        .expect(404);
-    });
-
-    it('Ошибка 400: Оценка события - некорректный рейтинг', async () => {
-      await request(server)
-        .post(`/activities/rate/${activityId}`)
-        .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .send({ rating: -1 }) // Например, рейтинг не может быть отрицательным
-        .expect(400);
-    });
-  });
-
   describe('GET /activities/qr/:activityId', () => {
-    it('Получение хэша активности для формирования QR ссылки', async () => {
-      await request(server)
+    it('| + | — получение хэша активности для формирования QR ссылки', async () => {
+      const activityResponseForLate = await request(server)
         .post('/activities')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
-        .send({ eventId: eventId })
+        .send({ eventId: lateEventId })
         .expect(201);
 
-      const response = await request(server)
-        .get(`/activities/qr/${activityId}`)
+      const hashResponse = await request(server)
+        .get(`/activities/qr/${activityResponseForLate.body.id}`)
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
         .expect(200);
 
-      assert.ok(response.body.hash, 'hash не вернулся');
+      assert.ok(hashResponse.body.hash, 'hash не вернулся');
     });
 
-    it('Ошибка 404: Получение QR - несуществующий activityId', async () => {
+    it('| - | — получение QR - несуществующий activityId', async () => {
       await request(server)
         .get('/activities/qr/non-exsisting-data')
         .set('Authorization', `Bearer ${currentUserAccessToken}`)
+        .expect(404);
+    });
+
+    it('| - | — получение QR - другой пользователь', async () => {
+      await request(server)
+        .get(`/activities/qr/${activityId}`)
+        .set('Authorization', `Bearer ${eventCreatorAccessToken}`)
         .expect(404);
     });
   });

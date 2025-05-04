@@ -167,7 +167,7 @@ describe('EventParticipationController (e2e)', () => {
       const confirmParticipationDto: ConfirmParticipationDto = {
         eventId: eventId,
         activityHash:
-          '000a57e373160b7507ef7b40225c659000b1ed81faafbef5624192dec4e7f56a5dae6bb2bf3deefbb9968b673a000000',
+          'ae6a57e373160b7507ef7b40225c659000b1ed81faafbef5624192dec4e7f56a5dae6bb2bf3deefbb9968b673aae6ae6',
         geoposition: { latitude: 55.751244, longitude: 37.618423 },
       };
 
