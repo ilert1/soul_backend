@@ -17,6 +17,8 @@ const modelNames = [
   'Currency',
   'Notification',
   'Experience',
+  'Task',
+  'UserTaskProgress',
 ];
 
 // Функция для генерации ресурсов
