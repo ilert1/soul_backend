@@ -50,6 +50,8 @@ services:
     container_name: backend
     ports:
       - "3005:3005"
+    volumes:
+      - ./backend_logs:/backend/logs
     depends_on:
       db:
         condition: service_healthy

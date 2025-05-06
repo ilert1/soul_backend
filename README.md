@@ -10,15 +10,22 @@
 
 ## 1. Запустите PostgreSQL (Docker)
 
+Внимание!
+Требуется docker на вашей локальной машине.
+
 ```bash
-# Запуск сервисов, пересборка образов при необходимости и запуск контейнеров в фоновом режиме.
-$ docker compose -f 'docker-compose.yml' up -d --build
+#Команда из всего docker-compose запускает только базу данных
+docker compose -f docker-compose.deploy.yml up -d db
 ```
 
 ## 2. Установите зависимости (отдельные для backend и admin)
 
+Внимание!
+Зависимости должны устанавливаться через npm ci - чтобы сохранять единые зависимости из package-lock.json.
+package-lock.json обновляется при добавлении новых библиотек.
+
 ```bash
-$ cd apps/backend && npm install && cd ../admin && npm install  && cd ../..
+$ cd apps/backend && npm ci && cd ../admin && npm ci  && cd ../..
 ```
 
 ## 3. Создайте файл .env на основе .env.example (отдельные для backend и admin)
