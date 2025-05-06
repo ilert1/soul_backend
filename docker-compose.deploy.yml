@@ -37,7 +37,7 @@ services:
       - DB_USER=${DB_USER:-soul-api}
       - DB_PASSWORD=${DB_PASSWORD:-soul-api}
       - DB_NAME=${DB_NAME:-soul-api}
-    command: "npx prisma migrate deploy && npx prisma db seed"
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed"
     depends_on:
       db:
         condition: service_healthy

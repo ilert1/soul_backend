@@ -28,7 +28,7 @@
     "test:unit": "mocha ./src/**/*.spec.ts"
   },
   "prisma": {
-    "seed": "ts-node src/seeds/seed.ts"
+    "seed": "node dist/seeds/seed.js"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.2",
