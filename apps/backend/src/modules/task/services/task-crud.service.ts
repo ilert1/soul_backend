@@ -21,6 +21,7 @@ export class TaskCrudService {
       where: whereCondition,
       select: {
         key: true,
+        parentKey: true,
         type: true,
         title: true,
         description: true,

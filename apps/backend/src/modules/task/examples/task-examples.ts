@@ -7,6 +7,14 @@ export const TaskExamples = {
     updatedAt: '2025-07-01T00:00:00.000Z',
     completedAt: '2025-07-01T00:00:00.000Z',
   },
+  weeklyPendingResponse: {
+    userId: '123e4567-e89b-12d3-a456-426614174000',
+    taskKey: 'SUBSCRIBED_INSTAGRAM',
+    progress: 0,
+    status: 'PENDING_CHECK',
+    updatedAt: '2025-07-01T00:00:00.000Z',
+    completedAt: '2025-07-01T00:00:00.000Z',
+  },
   weeklyCompletedResponse: {
     userId: '123e4567-e89b-12d3-a456-426614174000',
     taskKey: 'SUBSCRIBED_INSTAGRAM',

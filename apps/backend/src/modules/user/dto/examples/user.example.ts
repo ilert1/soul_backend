@@ -51,3 +51,51 @@ export const UserResponsePaginationExample = {
   limit: 10,
   pages: 1,
 };
+
+export const LeaderbeardPositionExample = {
+  position: 9,
+  experience: 0,
+  balance: 920,
+};
+
+export const LeaderbeardXPExample = [
+  {
+    id: 'bd995ab8-7506-4c88-a7d9-2863e7a149e4',
+    fullName: 'John Doe',
+    avatarImage: {
+      id: '2feb9e33-a078-408b-8151-34b915d3b26d',
+      mimeType: 'image/svg+xml',
+    },
+    experience: 600,
+  },
+  {
+    id: '6ced881d-f284-4fbe-9074-1c2782073049',
+    fullName: 'John Doe',
+    avatarImage: {
+      id: '37bf5a46-e158-4e92-b9e3-4e547109f749',
+      mimeType: 'image/svg+xml',
+    },
+    experience: 400,
+  },
+];
+
+export const LeaderbeardSPExample = [
+  {
+    id: 'bd995ab8-7506-4c88-a7d9-2863e7a149e4',
+    fullName: 'John Doe',
+    avatarImage: {
+      id: '2feb9e33-a078-408b-8151-34b915d3b26d',
+      mimeType: 'image/svg+xml',
+    },
+    waller: { balance: 1020 },
+  },
+  {
+    id: '6ced881d-f284-4fbe-9074-1c2782073049',
+    fullName: 'John Doe',
+    avatarImage: {
+      id: '37bf5a46-e158-4e92-b9e3-4e547109f749',
+      mimeType: 'image/svg+xml',
+    },
+    waller: { balance: 1020 },
+  },
+];

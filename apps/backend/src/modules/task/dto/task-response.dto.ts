@@ -23,6 +23,12 @@ export class TaskResponseDto {
   title: string;
 
   @ApiProperty({
+    example: 'CHECKED_SOCIAL_MEDIA',
+    description: 'Ключ родительского задания для weekly',
+  })
+  parentKey: string | null;
+
+  @ApiProperty({
     example:
       'В Instagram мы публикуем важные новости, репостим сториз со встреч, рассказываем о локальных сообществах из разных стран',
     description: 'Описание задания',
@@ -41,12 +47,6 @@ export class TaskResponseDto {
 }
 
 export class UserTaskProgressResponseDto {
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'ID пользователя',
-  })
-  userId: string;
-
   @ApiProperty({
     example: 'VIEWED_HOW_IT_WORKS',
     description: 'Ключ задания',

@@ -309,13 +309,14 @@ model Experience {
 
 model Task {
     key          TaskList           @id
+    parentKey    TaskList?          @map("parent_key")
     type         TaskType
     title        String
     description  String?
     goal         Int
-    rewardSp     Int
-    createdAt    DateTime           @default(now())
-    updatedAt    DateTime           @updatedAt
+    rewardSp     Int                @default(0) @map("reward_sp")
+    createdAt    DateTime           @default(now()) @map("created_at")
+    updatedAt    DateTime?          @updatedAt @map("updated_at")
     userProgress UserTaskProgress[]
 
     @@map("tasks")
@@ -323,11 +324,11 @@ model Task {
 
 model UserTaskProgress {
     id          String     @id @default(uuid())
-    userId      String
-    taskKey     TaskList
+    userId      String     @map("user_id")
+    taskKey     TaskList   @map("task_key")
     progress    Int        @default(0)
     status      TaskStatus @default(IN_PROGRESS)
-    updatedAt   DateTime   @updatedAt @map("created_at")
+    updatedAt   DateTime   @updatedAt @map("updated_at")
     completedAt DateTime?  @map("completed_at")
 
     user User @relation(fields: [userId], references: [id])
@@ -349,6 +350,7 @@ enum TaskType {
 
 enum TaskStatus {
     IN_PROGRESS
+    PENDING_CHECK
     COMPLETED
     REWARD_COLLECTED
 }
@@ -405,4 +407,9 @@ model Admin {
     updatedAt DateTime @updatedAt @map("updated_at")
 
     @@map("admins")
+}
+
+enum LeaderboardType {
+    XP
+    SP
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
-import { TgUserLanguageService } from './tg-user-language.service';
+import { TgUserLanguageService } from '../common/tg-user-language.service';
 
 @Injectable()
 export class TranslationService {
