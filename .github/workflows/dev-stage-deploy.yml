@@ -56,7 +56,7 @@ jobs:
             set -e
             cd /home/soul_backend/backend
             git pull origin dev
-            COMMIT_SHA="${{ github.event.inputs.commit_sha || github.sha }}"
+            COMMIT_SHA="${COMMIT_SHA:-$(git rev-parse HEAD)}"
             git checkout "$COMMIT_SHA"
 
             cd apps/backend
@@ -79,4 +79,4 @@ jobs:
         env:
           DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}
           DEV_SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
-          # COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+          COMMIT_SHA: ${{ github.event.inputs.commit_sha || github.sha }}
