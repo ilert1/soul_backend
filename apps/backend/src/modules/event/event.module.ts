@@ -20,6 +20,7 @@ import { EventParticipationService } from './services/event-participation.servic
 import { EventSearchService } from './services/event-search.service';
 import { EventUserService } from './services/event-user.service';
 import { ExperienceService } from '../experience/experience.service';
+import { TaskModule } from '../task/task.module';
 
 @Module({
   controllers: [
@@ -43,6 +44,12 @@ import { ExperienceService } from '../experience/experience.service';
     WsService,
     ExperienceService,
   ],
-  imports: [WalletModule, LoggerModule, PlaceModule, TransactionModule],
+  imports: [
+    WalletModule,
+    LoggerModule,
+    PlaceModule,
+    TransactionModule,
+    TaskModule,
+  ],
 })
 export class EventModule {}

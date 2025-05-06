@@ -2,7 +2,6 @@
 /dist
 /node_modules
 /build
-package-lock.json
 
 # Logs
 logs
@@ -12,6 +11,7 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+/backend_logs
 
 # OS
 .DS_Store

@@ -288,6 +288,12 @@ enum ExperienceType {
     OWN_MEETING_PER_RATING_5
     FRIENDS_PER_INVITE
     FARMING_PER_TIMER
+    CHECKIN_7_DAYS
+    CHECKED_SOCIAL_MEDIA
+    SHARED_ABOUT_SOUL
+    PREMIUM_SUPPORT
+    PROFILE_COMPLETED
+    VIEWED_HOW_IT_WORKS
 }
 
 model Experience {
@@ -303,13 +309,14 @@ model Experience {
 
 model Task {
     key          TaskList           @id
+    parentKey    TaskList?          @map("parent_key")
     type         TaskType
     title        String
     description  String?
     goal         Int
-    rewardSp     Int
-    createdAt    DateTime           @default(now())
-    updatedAt    DateTime           @updatedAt
+    rewardSp     Int                @default(0) @map("reward_sp")
+    createdAt    DateTime           @default(now()) @map("created_at")
+    updatedAt    DateTime?          @updatedAt @map("updated_at")
     userProgress UserTaskProgress[]
 
     @@map("tasks")
@@ -317,11 +324,11 @@ model Task {
 
 model UserTaskProgress {
     id          String     @id @default(uuid())
-    userId      String
-    taskKey     TaskList
+    userId      String     @map("user_id")
+    taskKey     TaskList   @map("task_key")
     progress    Int        @default(0)
     status      TaskStatus @default(IN_PROGRESS)
-    updatedAt   DateTime   @updatedAt @map("created_at")
+    updatedAt   DateTime   @updatedAt @map("updated_at")
     completedAt DateTime?  @map("completed_at")
 
     user User @relation(fields: [userId], references: [id])
@@ -343,11 +350,66 @@ enum TaskType {
 
 enum TaskStatus {
     IN_PROGRESS
+    PENDING_CHECK
     COMPLETED
     REWARD_COLLECTED
 }
 
 enum TaskList {
     CHECKIN
+    CHECKED_SOCIAL_MEDIA
+    SUBSCRIBED_SOUL_FORUM
+    SUBSCRIBED_INSTAGRAM
+    SHARED_ABOUT_SOUL
+    SHARED_WITH_FRIEND
+    ADDED_REFLINK_IN_TG_PROFILE
+    PREMIUM_SUPPORT
+    VOTED_SOUL_FORUM
+    SHARED_STORY_IN_TG
     PROFILE_COMPLETED
+    VIEWED_HOW_IT_WORKS
+    CREATED_FIRST_MEETING
+    HOLDED_MEETINGS
+    HOLDED_1_MEETINGS
+    HOLDED_5_MEETINGS
+    HOLDED_10_MEETINGS
+    HOLDED_20_MEETINGS
+    HOLDED_50_MEETINGS
+    MAX_GUESTS_IN_MEETING
+    MAX_GUESTS_5_IN_MEETING
+    MAX_GUESTS_10_IN_MEETING
+    MAX_GUESTS_20_IN_MEETING
+    MAX_GUESTS_50_IN_MEETING
+    INVITED_FRIENDS
+    INVITED_1_FRIENDS
+    INVITED_5_FRIENDS
+    INVITED_10_FRIENDS
+    INVITED_20_FRIENDS
+    INVITED_50_FRIENDS
+    INVITED_100_FRIENDS
+    COLLECTED_SP
+    COLLECTED_10_SP
+    COLLECTED_50_SP
+    COLLECTED_100_SP
+    COLLECTED_250_SP
+    COLLECTED_500_SP
+    COLLECTED_1000_SP
+    COLLECTED_2500_SP
+    COLLECTED_5000_SP
+}
+
+model Admin {
+    id        String   @id @default(uuid())
+    email     String   @unique
+    password  String
+    isPrimary Boolean  @default(false) @map("is_primary")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("admins")
+}
+
+enum LeaderboardType {
+    XP
+    SP
 }

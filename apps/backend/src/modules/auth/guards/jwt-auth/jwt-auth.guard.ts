@@ -20,14 +20,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   async canActivate(context: ExecutionContext) {
-    const request = context
-      .switchToHttp()
-      .getRequest<Request & { user?: CurrentUser }>();
-    const isRefreshRoute = request.url.startsWith('/api/auth/refresh'); // проверяем, что это путь для refresh
-
-    // Если это путь для refresh, пропускаем JwtAuthGuard
-    if (isRefreshRoute) return true;
-
     // Проверяем, является ли путь public
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -36,6 +28,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     // Если это путь для public, пропускаем JwtAuthGuard
     if (isPublic) return true;
+
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user?: CurrentUser }>();
+    const isRefreshRoute = request.url.startsWith('/api/auth/refresh'); // проверяем, что это путь для refresh
+
+    // Если это путь для refresh, пропускаем JwtAuthGuard
+    if (isRefreshRoute) return true;
 
     // Вызываем родительский метод canActivate для проверки JWT
     const canActivate = await super.canActivate(context);

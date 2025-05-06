@@ -2,16 +2,33 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { EntryCondition } from '@prisma/client';
 import * as assert from 'assert';
-import { TelegramData } from 'src/modules/auth/types/telegram-data';
 import { CreateEventRequestDto } from 'src/modules/event/dto/create-event.dto';
 import * as request from 'supertest';
-import { v4 as uuid } from 'uuid';
 import { AppModule } from '../../src/app.module';
 import {
   generateTestUserId,
   isResponseUnvalid,
   isResponseValid,
 } from '../utils';
+import { telegramData } from './auth-helper';
+
+const createEventDto: CreateEventRequestDto = {
+  title: 'Концерт классической музыки',
+  description:
+    'Уникальная возможность насладиться живым исполнением классической музыки от местных артистов.',
+  startDate: new Date('2026-03-23T15:30:00Z'), // '2026-03-23T15:30:00Z',
+  finishDate: new Date('2026-03-23T16:30:00Z'), // '2026-03-23T16:30:00Z',
+  guestLimit: 10,
+  entryCondition: EntryCondition.FREE,
+  bonusDistributionType: 'ALL',
+  place: {
+    name: 'Концертный зал Филармонии',
+    description: 'Один из лучших залов для классической музыки в городе.',
+    latitude: 55.751244,
+    longitude: 37.618423,
+    address: 'г. Москва, ул. Арбат, 10',
+  },
+};
 
 describe('AuthController (e2e)', () => {
   let server: string;
@@ -22,53 +39,8 @@ describe('AuthController (e2e)', () => {
   let inviteHash: string;
   let inviteEventHash: string;
 
-  const userId = generateTestUserId();
-  const chatId = userId + 1000000;
-
   const inviteeUserId = generateTestUserId();
   const inviteeWithEventUserId = generateTestUserId();
-
-  const telegramData: TelegramData = {
-    initData: 'mockedInitData',
-    initDataUnsafe: {
-      queryId: uuid(),
-      user: {
-        id: userId.toString(),
-        username: 'johndoe',
-        firstName: 'John',
-        lastName: 'Doe',
-        isBot: false,
-        languageCode: 'en',
-        isPremium: false,
-      },
-      chat: {
-        id: chatId,
-        title: 'Mocked Chat',
-        username: 'mockedchat',
-        type: 'group',
-      },
-      authDate: Math.floor(Date.now() / 1000),
-      hash: 'mockedHash',
-    },
-  };
-
-  const createEventDto: CreateEventRequestDto = {
-    title: 'Концерт классической музыки',
-    description:
-      'Уникальная возможность насладиться живым исполнением классической музыки от местных артистов.',
-    startDate: new Date('2026-03-23T15:30:00Z'), // '2026-03-23T15:30:00Z',
-    finishDate: new Date('2026-03-23T16:30:00Z'), // '2026-03-23T16:30:00Z',
-    guestLimit: 10,
-    entryCondition: EntryCondition.FREE,
-    bonusDistributionType: 'ALL',
-    place: {
-      name: 'Концертный зал Филармонии',
-      description: 'Один из лучших залов для классической музыки в городе.',
-      latitude: 55.751244,
-      longitude: 37.618423,
-      address: 'г. Москва, ул. Арбат, 10',
-    },
-  };
 
   before(async () => {
     const moduleFixture = await Test.createTestingModule({

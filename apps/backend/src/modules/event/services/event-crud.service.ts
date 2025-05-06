@@ -5,7 +5,7 @@ import {
   NotFoundException,
   HttpException,
 } from '@nestjs/common';
-import { Prisma, Wallet, TransactionType } from '@prisma/client';
+import { Prisma, Wallet, TransactionType, TaskList } from '@prisma/client';
 import { getDistance } from 'src/common/utils/geoposition';
 import { AppLoggerService } from 'src/modules/logger/logger.service';
 import { NotificationsService } from 'src/modules/notification/notification.service';
@@ -19,6 +19,7 @@ import {
 } from '../dto/create-event.dto';
 import { ResponseEventDto } from '../dto/response-event.dto';
 import { EVENT_CREATE_COST } from '../event.constants';
+import { TaskManagementService } from 'src/modules/task/services/task-management.service';
 
 @Injectable()
 export class EventCrudService {
@@ -29,6 +30,7 @@ export class EventCrudService {
     private readonly placeService: PlaceService,
     private readonly transactionCreateService: TransactionCreateService,
     private readonly notificationsService: NotificationsService,
+    private readonly taskManagementService: TaskManagementService,
   ) {}
 
   async createEvent(
@@ -38,7 +40,7 @@ export class EventCrudService {
     const currentDate = new Date();
 
     if (new Date(createEventDto.startDate) < currentDate) {
-      throw new InternalServerErrorException(
+      throw new BadRequestException(
         'Дата начала события не может быть в прошлом',
       );
     }
@@ -46,8 +48,8 @@ export class EventCrudService {
     if (
       new Date(createEventDto.finishDate) < new Date(createEventDto.startDate)
     ) {
-      throw new InternalServerErrorException(
-        'Дата окончания события не может быть меньше даты начала',
+      throw new BadRequestException(
+        'Дата окончания события не может быть раньше даты начала',
       );
     }
 
@@ -215,6 +217,12 @@ export class EventCrudService {
       throw new InternalServerErrorException(
         'Ошибка во время проведения транзакции',
       );
+    } finally {
+      // Проверяем задание "Создание первого мероприятия"
+      await this.taskManagementService.verifyTaskCompletion(
+        currentUserId,
+        TaskList.CREATED_FIRST_MEETING,
+      );
     }
   }
 
@@ -251,6 +259,9 @@ export class EventCrudService {
             },
           },
         },
+        guestLimit: true,
+        deposit: true,
+        bonusDistributionN: true,
         ratingDetails: {
           select: {
             votesForOne: true,
@@ -329,7 +340,7 @@ export class EventCrudService {
         new Date(updateEventDto.startDate ?? event.startDate)
       ) {
         throw new BadRequestException(
-          'Дата окончания события не может быть меньше даты начала',
+          'Дата окончания события не может быть раньше даты начала',
         );
       }
     }
@@ -340,7 +351,7 @@ export class EventCrudService {
         new Date(updateEventDto.finishDate ?? event.finishDate)
       ) {
         throw new BadRequestException(
-          'Дата начала события не может быть больше даты окончания',
+          'Дата начала события не может быть позже даты окончания',
         );
       }
     }

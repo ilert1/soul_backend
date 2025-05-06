@@ -1,32 +1,44 @@
 import {
+  Body,
   Controller,
   Get,
-  Body,
-  Patch,
   Param,
+  Patch,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { IdParamDto } from 'src/common/dto/id-param.dto';
 import {
+  ApiBearerAuth,
+  ApiBody,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiBearerAuth,
-  ApiParam,
-  ApiBody,
 } from '@nestjs/swagger';
+import { LeaderboardType } from '@prisma/client';
+import { User } from 'src/common/decorators/current-user.decorator';
+import { TransformField } from 'src/common/decorators/transform-field.decorator';
+import { IdParamDto } from 'src/common/dto/id-param.dto';
+import { TransformFieldInterceptor } from 'src/common/interceptors/transform-field.interceptor';
+import { UserPayload } from 'src/common/types/user-payload.dto';
 import {
+  LeaderbeardPositionExample,
+  LeaderbeardSPExample,
+  LeaderbeardXPExample,
   UserExampleRequestUpdate,
   UserResponseExample,
 } from './dto/examples/user.example';
-import { UserResponseDto } from './dto/user-response.dto';
-import { TransformField } from 'src/common/decorators/transform-field.decorator';
-import { TransformFieldInterceptor } from 'src/common/interceptors/transform-field.interceptor';
-import { User } from 'src/common/decorators/current-user.decorator';
-import { UserPayload } from 'src/common/types/user-payload.dto';
+import {
+  LeaderboardDto,
+  LeaderboardPositionDto,
+} from './dto/leaderboard-response.dto';
 import { UserGlobalResponseDto } from './dto/response-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { UserService } from './user.service';
+import { PaginatedResult } from 'src/common/types/paginarted-result';
+import { DEFAULT_PAGE_SIZE } from 'src/common/utils/constants';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -34,7 +46,6 @@ import { UserGlobalResponseDto } from './dto/response-user.dto';
 @UseInterceptors(TransformFieldInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
   @Get('me')
   @ApiOperation({ summary: 'Получить профиль текущего пользователя' })
   @ApiResponse({
@@ -48,6 +59,87 @@ export class UserController {
   @TransformField({ '': UserGlobalResponseDto })
   async getProfile(@User() user: UserPayload) {
     return await this.userService.findMe(user.id);
+  }
+
+  @Get('/leaderboard')
+  @ApiOperation({ summary: 'Получить список лидеров по фильтру и стране' })
+  @ApiQuery({
+    name: 'filter',
+    required: true,
+    enum: LeaderboardType,
+    description: 'Фильтр по очкам опыта или SOUL Points',
+    example: 'XP',
+  })
+  @ApiQuery({
+    name: 'countryId',
+    required: false,
+    type: 'number',
+    description: 'ID страны для фильтрации',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Список лидеров успешно получен',
+    examples: {
+      XP: {
+        summary: 'Список лидеров по очкам опыта',
+        value: LeaderbeardXPExample,
+      },
+      SP: {
+        summary: 'Список лидеров по SOUL Points',
+        value: LeaderbeardSPExample,
+      },
+    },
+  })
+  @TransformField({ '': LeaderboardDto })
+  async getLeaderboard(
+    @Query('filter') filter: LeaderboardType,
+    @Query('countryId') countryId?: number,
+  ): Promise<LeaderboardDto[] | null> {
+    return await this.userService.getLeaderboard({
+      filter,
+      countryId,
+    });
+  }
+
+  @Get('/leaderboard/me')
+  @ApiOperation({
+    summary:
+      'Получить очки и позицию пользователя в списке лидеров по фильтру и стране',
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: true,
+    enum: LeaderboardType,
+    description: 'Фильтр по очкам опыта или SOUL Points',
+    example: 'XP',
+  })
+  @ApiQuery({
+    name: 'countryId',
+    required: false,
+    type: 'number',
+    description: 'ID страны для фильтрации',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Очки и позиция пользователя в списке лидеров успешно получена',
+    schema: {
+      example: LeaderbeardPositionExample,
+    },
+  })
+  @TransformField({ '': LeaderboardPositionDto })
+  async getPositionInLeaderboard(
+    @User() user: UserPayload,
+    @Query('filter') filter?: string,
+    @Query('countryId') countryId?: number,
+  ): Promise<LeaderboardPositionDto | null> {
+    return await this.userService.getPositionInLeaderboard({
+      filter,
+      countryId,
+      userId: user.id,
+    });
   }
 
   @Get(':id')
@@ -108,6 +200,18 @@ export class UserController {
     required: true,
     description: 'Данные для получения всех пользователей по id события',
   })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Количество записей',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Номер страницы',
+    example: 1,
+  })
   @ApiResponse({
     status: 200,
     description: 'Список пользователей, связанных с событием',
@@ -117,8 +221,10 @@ export class UserController {
   @TransformField({ '': UserResponseDto })
   async getUsersByEventId(
     @Param('eventId') eventId: string,
-  ): Promise<UserResponseDto[] | null> {
-    return await this.userService.findUsersByEventId(eventId);
+    @Query('limit') limit: number = DEFAULT_PAGE_SIZE,
+    @Query('page') page: number = 1,
+  ): Promise<PaginatedResult<UserResponseDto | null>> {
+    return await this.userService.findUsersByEventId({ limit, page }, eventId);
   }
 
   @Patch('ban/:id')

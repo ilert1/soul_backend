@@ -1,7 +1,7 @@
-// Награды за чекин
-type CheckinRewardMap = Record<number, number>;
+type RewardMap = Record<number, number>;
 
-export const checkinReward: CheckinRewardMap = {
+// Награды за чекин
+export const checkinReward: RewardMap = {
   1: 2,
   2: 4,
   3: 8,

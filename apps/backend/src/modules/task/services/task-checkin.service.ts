@@ -5,16 +5,23 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TaskList, TaskStatus, TransactionType } from '@prisma/client';
+import {
+  ExperienceType,
+  TaskList,
+  TaskStatus,
+  TransactionType,
+} from '@prisma/client';
 import { TransactionCreateService } from 'src/modules/transaction/transaction-create.service';
 import { checkinReward } from '../task.constants';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
+import { ExperienceService } from 'src/modules/experience/experience.service';
 
 @Injectable()
 export class TaskCheckinService {
   constructor(
     private prisma: PrismaService,
     private readonly transactionCreateService: TransactionCreateService,
+    private readonly experienceServise: ExperienceService,
   ) {}
 
   async userCheckIn(userId: string): Promise<UserTaskProgressResponseDto> {
@@ -59,6 +66,14 @@ export class TaskCheckinService {
 
       streak = hoursSinceLastCheckIn < 48 ? lastCheckIn.progress + 1 : 1;
 
+      if (streak === 7) {
+        // Добавляем опыт
+        await this.experienceServise.addExperience({
+          userId,
+          type: ExperienceType.CHECKIN_7_DAYS,
+        });
+      }
+
       if (streak > 7) streak = 1;
     }
 
@@ -76,7 +91,12 @@ export class TaskCheckinService {
         status: TaskStatus.COMPLETED,
         completedAt: now,
       },
-      select: { id: true, progress: true, status: true, completedAt: true },
+      select: {
+        taskKey: true,
+        progress: true,
+        status: true,
+        completedAt: true,
+      },
     });
 
     const wallet = await this.prisma.wallet.findFirst({ where: { userId } });

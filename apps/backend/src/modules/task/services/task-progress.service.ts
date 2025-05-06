@@ -1,16 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TaskList, TaskStatus } from '@prisma/client';
-import {
-  TaskProgressResponseDto,
-  UserTaskProgressResponseDto,
-} from '../dto/task-response.dto';
+import { TaskList, TaskStatus, TaskType } from '@prisma/client';
+import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
 
 @Injectable()
 export class TaskProgressService {
   constructor(private prisma: PrismaService) {}
 
-  async getUserProgress(userId: string): Promise<TaskProgressResponseDto[]> {
+  async getUserProgress(
+    userId: string,
+  ): Promise<UserTaskProgressResponseDto[]> {
     return await this.prisma.userTaskProgress.findMany({
       where: { userId },
       select: {
@@ -23,30 +22,66 @@ export class TaskProgressService {
     });
   }
 
-  async updateTaskProgress(
+  async getUserTaskTypeProgress(
     userId: string,
-    taskKey: TaskList,
-    progressIncrement: number,
-  ): Promise<UserTaskProgressResponseDto> {
-    const task = await this.prisma.task.findUniqueOrThrow({
-      where: { key: taskKey },
-    });
-
-    const taskIsCompleted = await this.prisma.userTaskProgress.findUnique({
-      where: {
-        userId_taskKey: {
-          userId,
-          taskKey,
-        },
-        status: { not: TaskStatus.IN_PROGRESS },
-      },
-    });
-
-    if (taskIsCompleted) {
-      throw new BadRequestException('Задание уже выполнено');
+    type: TaskType,
+  ): Promise<UserTaskProgressResponseDto[]> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskType
+    if (!Object.values(TaskType).includes(type)) {
+      throw new BadRequestException('Невалидный тип заданий');
     }
 
-    const updatedProgress = await this.prisma.userTaskProgress.upsert({
+    // Получаем список ключей задач с нужным типом
+    const taskTypeKeys = await this.prisma.task.findMany({
+      where: {
+        type,
+        goal: { gt: 0 },
+      },
+      select: { key: true },
+    });
+
+    const keys = taskTypeKeys.map((task) => task.key);
+
+    if (!keys.length) {
+      return [];
+    }
+
+    // Получаем прогресс по ключам задач
+    return this.prisma.userTaskProgress.findMany({
+      where: {
+        userId,
+        taskKey: { in: keys },
+      },
+      select: {
+        taskKey: true,
+        progress: true,
+        status: true,
+        updatedAt: true,
+        completedAt: true,
+      },
+    });
+  }
+
+  async getUserProgressUniqueTask(
+    userId: string,
+    taskKey: TaskList,
+  ): Promise<UserTaskProgressResponseDto> {
+    // Проверяем, что переданный параметр является допустимым значением из TaskList
+    if (!Object.values(TaskList).includes(taskKey)) {
+      throw new BadRequestException('Невалидный ключ задания');
+    }
+
+    // Проверяем, что пользователь существует
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      throw new BadRequestException('Пользователь не найден');
+    }
+
+    const progress = await this.prisma.userTaskProgress.upsert({
       where: {
         userId_taskKey: {
           userId,
@@ -56,27 +91,66 @@ export class TaskProgressService {
       create: {
         userId,
         taskKey,
-        progress: progressIncrement,
-        status:
-          progressIncrement >= task.goal
-            ? TaskStatus.COMPLETED
-            : TaskStatus.IN_PROGRESS,
-        completedAt: progressIncrement >= task.goal ? new Date() : null,
       },
-      update: {
-        progress: {
-          increment: progressIncrement,
-        },
-        status: {
-          set:
-            progressIncrement >= task.goal
-              ? TaskStatus.COMPLETED
-              : TaskStatus.IN_PROGRESS,
-        },
-        completedAt: progressIncrement >= task.goal ? new Date() : null,
+      update: {},
+      select: {
+        id: true,
+        taskKey: true,
+        progress: true,
+        status: true,
+        updatedAt: true,
+        completedAt: true,
       },
     });
 
-    return updatedProgress;
+    if (!progress) {
+      throw new BadRequestException('Ошибка получения прогресса');
+    }
+
+    return progress;
+  }
+
+  async updateTaskProgress(
+    userId: string,
+    taskKey: TaskList,
+    progressIncrement: number,
+  ): Promise<UserTaskProgressResponseDto> {
+    const task = await this.prisma.task.findUniqueOrThrow({
+      where: { key: taskKey },
+    });
+
+    const existingProgress = await this.getUserProgressUniqueTask(
+      userId,
+      taskKey,
+    );
+
+    // Если задача уже не в статусе IN_PROGRESS — больше апдейтить нельзя
+    if (existingProgress.status !== TaskStatus.IN_PROGRESS) {
+      return existingProgress;
+    }
+
+    let newProgress: number = existingProgress.progress + progressIncrement;
+    let newStatus: TaskStatus = TaskStatus.IN_PROGRESS;
+    let completedAt: Date | null = null;
+
+    if (task.goal !== 0 && newProgress >= task.goal) {
+      newStatus = TaskStatus.COMPLETED;
+      completedAt = new Date();
+      newProgress = task.goal; // не больше чем goal
+    }
+
+    return await this.prisma.userTaskProgress.update({
+      where: {
+        userId_taskKey: {
+          userId,
+          taskKey,
+        },
+      },
+      data: {
+        progress: newProgress,
+        status: newStatus,
+        completedAt,
+      },
+    });
   }
 }

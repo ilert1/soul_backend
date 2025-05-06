@@ -78,9 +78,9 @@ export class ActivityService {
     });
   }
 
-  async deleteActivityById(id: string) {
+  async deleteActivityById(id: string, userId: string) {
     return await this.prisma.activity.delete({
-      where: { id, event: { isArchived: false } },
+      where: { id, userId: userId, event: { isArchived: false } },
     });
   }
 

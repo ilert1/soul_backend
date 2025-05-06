@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, TransactionType, User } from '@prisma/client';
+import { Prisma, TaskList, TransactionType, User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { getObjectFromHash } from 'src/common/utils/hash.utils';
@@ -28,7 +28,6 @@ import { Action, ActionType } from './types/action';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import { CurrentUser } from './types/current-user';
 import { Invitation } from './types/invitation';
-import { TelegramData, TelegramUserDataAnalyze } from './types/telegram-data';
 import { TransactionCreateService } from '../transaction/transaction-create.service';
 import {
   POINTS_FOR_ONE_YEAR_TG,
@@ -36,6 +35,9 @@ import {
   POINTS_FOR_REGISTRATION,
 } from './auth.consts';
 import { ExperienceService } from '../experience/experience.service';
+import { TaskManagementService } from '../task/services/task-management.service';
+import { TelegramDataDto } from './dto/telegram-data.dto';
+import { TelegramUserDataAnalyze } from './types/telegram-data';
 
 @Injectable()
 export class AuthService {
@@ -53,9 +55,10 @@ export class AuthService {
     private inviteService: InviteService,
     private readonly transactionCreateService: TransactionCreateService,
     private readonly experienceServise: ExperienceService,
+    private readonly taskManagementService: TaskManagementService,
   ) {}
 
-  async handleTelegramLogin(telegramData: TelegramData) {
+  async handleTelegramLogin(telegramData: TelegramDataDto) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN!;
     const initData = telegramData.initData;
     const userData = telegramData.initDataUnsafe.user;
@@ -80,10 +83,6 @@ export class AuthService {
 
     if (!isValid) {
       throw new BadRequestException('Неверные данные Telegram');
-    }
-
-    if (!userData.id) {
-      throw new BadRequestException('Telegram ID не валиден');
     }
 
     // Поиск или создание TelegramUser
@@ -136,6 +135,10 @@ export class AuthService {
         telegramUser.telegramId,
         avatarImage?.id,
       );
+      analyzedProfile = await this.getTelegramUserAnalyze(
+        telegramData,
+        user.id,
+      );
 
       if (invitation && invitation.inviterId) {
         if (
@@ -159,12 +162,13 @@ export class AuthService {
           userId: inviterId,
           type: 'FRIENDS_PER_INVITE',
         });
-      }
 
-      analyzedProfile = await this.getTelegramUserAnalyze(
-        telegramData,
-        user.id,
-      );
+        // Выполняем проверку задания
+        await this.taskManagementService.verifyTaskCompletion(
+          inviterId,
+          TaskList.INVITED_FRIENDS,
+        );
+      }
     }
 
     if (invitation && invitation.eventId) {
@@ -184,7 +188,7 @@ export class AuthService {
   }
 
   private async getTelegramUserAnalyze(
-    telegramData: TelegramData,
+    telegramData: TelegramDataDto,
     userId: string,
   ) {
     let analyzeProfile: TelegramUserDataAnalyze | null = null;

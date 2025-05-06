@@ -42,6 +42,8 @@ import { NotificationsController } from './modules/notification/notification.con
 import { NotificationsModule } from './modules/notification/notification.module';
 import { CurrencyService } from './modules/static/currency.service';
 import { CurrencyController } from './modules/static/currency.controller';
+import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
+import * as path from 'path';
 import { TestNotificationController } from './modules/notification/test-notification.controller';
 import { ExperienceModule } from './modules/experience/experience.module';
 import { ExperienceService } from './modules/experience/experience.service';
@@ -64,12 +66,33 @@ import { TaskCheckinService } from './modules/task/services/task-checkin.service
 import { TaskCrudService } from './modules/task/services/task-crud.service';
 import { TaskManagementService } from './modules/task/services/task-management.service';
 import { TaskProgressService } from './modules/task/services/task-progress.service';
+import { TaskWeeklyController } from './modules/task/controllers/task-weekly.controller';
+import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
+import { TelegramModule } from './telegram/bot/telegram.module';
+import { GroupBotModule } from './telegram/GroupBot/group-bot.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { TelegramClientModule } from './modules/telegramClient/telegramClient.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [jwtConfig, refreshJwtConfig],
+    }),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true,
+      },
+      resolvers: [
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+      ],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'assets'),
+      serveRoot: '/static',
     }),
     PrismaModule,
     AuthModule,
@@ -88,7 +111,11 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
     FarmModule,
     WsModule,
     NotificationsModule,
+    TelegramModule,
+    TelegramClientModule,
     ExperienceModule,
+    TelegramModule,
+    GroupBotModule,
   ],
   controllers: [
     UserController,
@@ -104,6 +131,7 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
     EventCrudController, // crud controller всегда в конце
     // Task Controllers
     TaskCheckinController,
+    TaskWeeklyController,
     TaskManagementController,
     TaskProgressController,
     TaskCrudController, // crud controller всегда в конце
@@ -130,6 +158,7 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
     EventCrudService,
     // Task Services
     TaskCheckinService,
+    TaskWeeklyService,
     TaskManagementService,
     TaskProgressService,
     TaskCrudService,
