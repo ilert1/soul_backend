@@ -25,15 +25,14 @@ jobs:
         with:
           node-version: "21"
 
-      #  Локальные билды отключены так как билд собирается на хосте, и если он падает - то смена контейнеров не происходит
-      #  Также билд проверяется в тестах при ПР
+      # Локальные билды отключены, проверка в PR
       # - name: Install & build backend locally
       #   working-directory: apps/backend
       #   run: |
       #     npm install
       #     npx prisma generate
       #     npm run build
-
+      #
       # - name: Install & build admin locally
       #   working-directory: apps/admin
       #   run: |
@@ -45,7 +44,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "$DEV_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          eval $(ssh-agent -s)
+          eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_ed25519
         env:
           DEV_SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
@@ -53,11 +52,11 @@ jobs:
       - name: Deploy to Server
         run: |
           ssh-keyscan -H "$DEV_SSH_HOST" >> ~/.ssh/known_hosts
-          ssh "$DEV_SSH_USER@$DEV_SSH_HOST" << 'EOF'
+          ssh "$DEV_SSH_USER@$DEV_SSH_HOST" << EOF
             set -e
             cd /home/soul_backend/backend
             git pull origin dev
-            COMMIT_SHA="${COMMIT_SHA:-latest}"
+            COMMIT_SHA="${{ github.event.inputs.commit_sha || github.sha }}"
             git checkout "$COMMIT_SHA"
 
             cd apps/backend
@@ -80,4 +79,4 @@ jobs:
         env:
           DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}
           DEV_SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
-          COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+          # COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
