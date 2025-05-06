@@ -135,6 +135,10 @@ export class AuthService {
         telegramUser.telegramId,
         avatarImage?.id,
       );
+      analyzedProfile = await this.getTelegramUserAnalyze(
+        telegramData,
+        user.id,
+      );
 
       if (invitation && invitation.inviterId) {
         if (
@@ -165,11 +169,6 @@ export class AuthService {
           TaskList.INVITED_FRIENDS,
         );
       }
-
-      analyzedProfile = await this.getTelegramUserAnalyze(
-        telegramData,
-        user.id,
-      );
     }
 
     if (invitation && invitation.eventId) {
