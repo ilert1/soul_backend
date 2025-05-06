@@ -43,6 +43,10 @@ jobs:
         run: npm install
         working-directory: apps/backend
 
+      - name: Backend local build
+        run: npm run build
+        working-directory: apps/backend
+
       - name: Prisma schema init
         run: npx prisma generate && npx prisma migrate deploy && npx prisma db seed
         working-directory: apps/backend
