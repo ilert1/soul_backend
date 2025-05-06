@@ -68,6 +68,7 @@ jobs:
             npm run admin:build
 
             cd ../..
+            docker network inspect backend-net || docker network create backend-net
             docker compose -f docker-compose.deploy.yml up -d db
             docker compose -f docker-compose.deploy.yml run --rm migrate
             docker compose -f docker-compose.deploy.yml up -d --build backend admin
