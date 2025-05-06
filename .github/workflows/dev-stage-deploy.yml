@@ -67,7 +67,7 @@ jobs:
             npm ci
             npm run admin:build
 
-            cd ..
+            cd ../..
             docker compose -f docker-compose.deploy.yml up -d db
             docker compose -f docker-compose.deploy.yml run --rm migrate
             docker compose -f docker-compose.deploy.yml up -d --build backend admin
