@@ -53,6 +53,7 @@ jobs:
         run: |
           ssh-keyscan -H "$DEV_SSH_HOST" >> ~/.ssh/known_hosts
           ssh "$DEV_SSH_USER@$DEV_SSH_HOST" << 'EOF'
+            set -e
             cd /home/soul_backend/backend
             git pull origin dev
             COMMIT_SHA="${COMMIT_SHA:-$DEFAULT_COMMIT_SHA}"
