@@ -18,6 +18,6 @@ import { GroupBotService } from './group-bot.service';
     GroupBotService,
     // TranslationService,
   ],
-  exports: [],
+  exports: [GroupBotService],
 })
 export class GroupBotModule {}

@@ -14,6 +14,10 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
 
     this.bot = new Bot(process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '');
 
+    if (!process.env.TELEGRAM_GROUP_ID) {
+      console.log('TELEGRAM_GROUP_ID is not defined');
+    }
+
     this.registerHello();
 
     run(this.bot);
@@ -70,5 +74,32 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       );
       this.welcomeMessages.set(chatId, welcome.message_id);
     });
+  }
+
+  async userIsChatMember(telegramUserId: number): Promise<boolean> {
+    const groupId = process.env.TELEGRAM_GROUP_ID ?? '';
+
+    try {
+      const result = await this.bot.api.getChatMember(groupId, telegramUserId);
+
+      return !!result;
+    } catch {
+      return false;
+    }
+  }
+
+  async userIsBoosted(telegramUserId: number): Promise<boolean> {
+    const groupId = process.env.TELEGRAM_GROUP_ID ?? '';
+
+    try {
+      const result = await this.bot.api.getUserChatBoosts(
+        groupId,
+        telegramUserId,
+      );
+
+      return result.boosts.length > 0;
+    } catch {
+      return false;
+    }
   }
 }
