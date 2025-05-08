@@ -4,6 +4,15 @@ import { Bot, InputFile } from 'grammy';
 import { ExperienceService } from 'src/modules/experience/experience.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { AppLoggerService } from 'src/modules/logger/logger.service';
+import { experiencePoints } from 'src/modules/experience/dto/constants';
+import { UserExperienceBufferDto } from 'src/modules/experience/dto/experience.dto';
+
+type DataBuffer = {
+  [userId: string]: {
+    xp: { [key in ExperienceType]?: number };
+    sp: number;
+  };
+};
 
 @Injectable()
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
@@ -11,6 +20,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private welcomeMessages = new Map<number, number>();
   private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
   private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
+  private dataBuffer: DataBuffer = {};
 
   constructor(
     private prisma: PrismaService,
@@ -42,6 +52,12 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       .catch((err) => {
         this.loggerService.error('Ошибка при запуске бота:', err);
       });
+
+    setInterval(() => {
+      this.flushDataBuffer().catch((err) => {
+        this.loggerService.error('Ошибка при отправке опыта:', err);
+      });
+    }, 60000);
   }
 
   async onModuleDestroy() {
@@ -146,15 +162,9 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
         // Опыт для ответчика (если зарегистрирован) и только если это чужое сообщение
         if (currentUserId) {
           if (originalMessageUserId !== telegramId) {
-            await this.experienceService.addExperience({
-              userId: currentUserId,
-              type: ExperienceType.REPLY,
-            });
+            this.addXPToDataBuffer(currentUserId, ExperienceType.REPLY);
           } else {
-            await this.experienceService.addExperience({
-              userId: currentUserId,
-              type: ExperienceType.MESSAGE,
-            });
+            this.addXPToDataBuffer(currentUserId, ExperienceType.MESSAGE);
           }
         }
 
@@ -166,19 +176,16 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
           });
 
           if (originalUser?.userId) {
-            await this.experienceService.addExperience({
-              userId: originalUser.userId,
-              type: ExperienceType.RECEIVED_REPLY,
-            });
+            this.addXPToDataBuffer(
+              originalUser.userId,
+              ExperienceType.RECEIVED_REPLY,
+            );
           }
         }
       } else {
         // Обычное сообщение (только если отправитель зарегистрирован)
         if (currentUserId) {
-          await this.experienceService.addExperience({
-            userId: currentUserId,
-            type: ExperienceType.MESSAGE,
-          });
+          this.addXPToDataBuffer(currentUserId, ExperienceType.MESSAGE);
         }
       }
 
@@ -219,12 +226,20 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       const userId = user?.userId;
       const originalTelegramUserId = message?.telegramUserId;
 
+      // Вычисляем добавленные или удаленные реакции
+      const isAddedReaction = !!(
+        reaction.new_reaction.length > reaction.old_reaction.length
+      );
+
       // Если пользователь существует — начисляем опыт за реакцию если это чужое сообщение
       if (userId && message?.telegramUserId !== BigInt(telegramId)) {
-        await this.experienceService.addExperience({
-          userId,
-          type: ExperienceType.REACTION,
-        });
+        if (isAddedReaction) {
+          // Eсли реакция добавлена
+          this.addXPToDataBuffer(userId, ExperienceType.REACTION);
+        } else {
+          // Если реакция удалена
+          this.removeXPFromDataBuffer(userId, ExperienceType.REACTION);
+        }
       }
 
       // Если автор сообщения найден и это не сам реактор — начисляем опыт автору
@@ -238,12 +253,76 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
         });
 
         if (originalUser?.userId) {
-          await this.experienceService.addExperience({
-            userId: originalUser.userId,
-            type: ExperienceType.RECEIVED_REACTION,
-          });
+          if (isAddedReaction) {
+            // Eсли реакция добавлена
+            this.addXPToDataBuffer(
+              originalUser.userId,
+              ExperienceType.RECEIVED_REACTION,
+            );
+          } else {
+            // Если реакция удалена
+            this.removeXPFromDataBuffer(
+              originalUser.userId,
+              ExperienceType.RECEIVED_REACTION,
+            );
+          }
         }
       }
     });
+  }
+
+  private addXPToDataBuffer(userId: string, type: ExperienceType) {
+    if (!this.dataBuffer[userId]) {
+      this.dataBuffer[userId] = { xp: {}, sp: 0 };
+    }
+
+    const xpMap = this.dataBuffer[userId].xp;
+
+    // Получаем текущее количество этого типа опыта
+    const currentCount = xpMap[type] ?? 0;
+
+    // Добавляем только если количество меньше 10
+    if (currentCount < 10) {
+      xpMap[type] = currentCount + 1;
+    }
+  }
+
+  private removeXPFromDataBuffer(userId: string, type: ExperienceType) {
+    const buffer = this.dataBuffer[userId];
+
+    if (!buffer) return;
+
+    const xpMap = buffer.xp;
+
+    if (xpMap[type]) {
+      xpMap[type] -= 1;
+
+      // Если стало 0 — удаляем ключ
+      if (xpMap[type] === 0) {
+        delete xpMap[type];
+      }
+    }
+
+    // Если и xp и sp пустые — удаляем всю запись
+    if (Object.keys(xpMap).length === 0 && buffer.sp === 0) {
+      delete this.dataBuffer[userId];
+    }
+  }
+
+  private async flushDataBuffer() {
+    if (Object.keys(this.dataBuffer).length === 0) return;
+
+    const bufferCopy = { ...this.dataBuffer };
+    this.dataBuffer = {};
+
+    for (const [userId, data] of Object.entries(bufferCopy)) {
+      const userExperience: UserExperienceBufferDto = {
+        userId,
+        xp: data.xp,
+        // sp: data.sp,
+      };
+
+      await this.experienceService.processUserExperienceBuffer(userExperience);
+    }
   }
 }
