@@ -8,6 +8,7 @@ import { TaskList, TaskStatus, TaskType } from '@prisma/client';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
 import { TaskProgressService } from './task-progress.service';
 import { TelegramClientService } from 'src/modules/telegramClient/telegramClient.service';
+import { GroupBotService } from 'src/telegram/GroupBot/group-bot.service';
 
 @Injectable()
 export class TaskWeeklyService {
@@ -15,6 +16,7 @@ export class TaskWeeklyService {
     private prisma: PrismaService,
     private progressService: TaskProgressService,
     private telegramClientService: TelegramClientService,
+    private groupBotService: GroupBotService,
   ) {}
 
   async confirmWeeklyUserTask(
@@ -163,6 +165,52 @@ export class TaskWeeklyService {
 
     if (userTaskProgress.status === TaskStatus.IN_PROGRESS) {
       switch (taskKey) {
+        // Проверка задания подписаться на форум
+        case TaskList.SUBSCRIBED_SOUL_FORUM: {
+          const user = await this.prisma.telegramUser.findUnique({
+            where: { userId },
+            select: { telegramId: true },
+          });
+
+          if (!user || !user.telegramId) {
+            throw new InternalServerErrorException(
+              'Telegram профиль не привязан',
+            );
+          }
+
+          const isMember = await this.groupBotService.userIsChatMember(
+            parseInt(user.telegramId),
+          );
+
+          if (isMember) {
+            result = await this.confirmWeeklyUserTask(userId, taskKey);
+          }
+
+          break;
+        }
+        // Проверка задания буста группы
+        case TaskList.VOTED_SOUL_FORUM: {
+          const user = await this.prisma.telegramUser.findUnique({
+            where: { userId },
+            select: { telegramId: true },
+          });
+
+          if (!user || !user.telegramId) {
+            throw new InternalServerErrorException(
+              'Telegram профиль не привязан',
+            );
+          }
+
+          const isBoosted = await this.groupBotService.userIsBoosted(
+            parseInt(user.telegramId),
+          );
+
+          if (isBoosted) {
+            result = await this.confirmWeeklyUserTask(userId, taskKey);
+          }
+
+          break;
+        }
         // Проверка задания поделиться с другом
         case TaskList.SHARED_WITH_FRIEND: {
           const count = await this.prisma.invite.count({
