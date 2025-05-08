@@ -331,13 +331,13 @@ export class UserService {
         select: {
           id: true,
           fullName: true,
+          experience: true,
           avatarImage: {
             select: {
               id: true,
               mimeType: true,
             },
           },
-          experience: true,
           wallet: {
             select: {
               balance: true,
@@ -368,6 +368,7 @@ export class UserService {
       select: {
         id: true,
         fullName: true,
+        experience: true,
         wallet: {
           select: {
             balance: true,
