@@ -1,22 +1,29 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Bot, InputFile } from 'grammy';
 import { run } from '@grammyjs/runner';
+import { AppLoggerService } from 'src/modules/logger/logger.service';
 
 @Injectable()
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private welcomeMessages = new Map<number, number>();
+  private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
+  private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
 
-  constructor() {}
+  constructor(private readonly loggerService: AppLoggerService) {}
 
   onModuleInit() {
     if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
-    this.bot = new Bot(process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '');
+    if (!this.groupId || !this.botToken) {
+      this.loggerService.error(
+        'TELEGRAM_GROUP_BOT_TOKEN or TELEGRAM_GROUP_ID is not defined',
+      );
 
-    if (!process.env.TELEGRAM_GROUP_ID) {
-      console.log('TELEGRAM_GROUP_ID is not defined');
+      return;
     }
+
+    this.bot = new Bot(this.botToken);
 
     this.registerHello();
 
@@ -77,10 +84,11 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   async userIsChatMember(telegramUserId: number): Promise<boolean> {
-    const groupId = process.env.TELEGRAM_GROUP_ID ?? '';
-
     try {
-      const result = await this.bot.api.getChatMember(groupId, telegramUserId);
+      const result = await this.bot.api.getChatMember(
+        this.groupId,
+        telegramUserId,
+      );
 
       return !!result;
     } catch {
@@ -89,11 +97,9 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   }
 
   async userIsBoosted(telegramUserId: number): Promise<boolean> {
-    const groupId = process.env.TELEGRAM_GROUP_ID ?? '';
-
     try {
       const result = await this.bot.api.getUserChatBoosts(
-        groupId,
+        this.groupId,
         telegramUserId,
       );
 
