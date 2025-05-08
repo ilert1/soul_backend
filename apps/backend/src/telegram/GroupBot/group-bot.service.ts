@@ -14,7 +14,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     private readonly experienceService: ExperienceService,
   ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
     this.bot = new Bot(process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '');
@@ -23,9 +23,13 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     this.registerMessageHandlers();
     this.registerReactionHandlers();
 
-    await this.bot.start({
-      allowed_updates: ['message', 'message_reaction'],
-    });
+    this.bot
+      .start({
+        allowed_updates: ['message', 'message_reaction'],
+      })
+      .catch((err) => {
+        console.error('Ошибка при запуске бота:', err);
+      });
   }
 
   async onModuleDestroy() {
