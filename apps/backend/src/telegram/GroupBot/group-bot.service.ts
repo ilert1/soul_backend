@@ -1,10 +1,9 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ExperienceType } from '@prisma/client';
 import { Bot, InputFile } from 'grammy';
-import { run } from '@grammyjs/runner';
-import { AppLoggerService } from 'src/modules/logger/logger.service';
 import { ExperienceService } from 'src/modules/experience/experience.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
+import { AppLoggerService } from 'src/modules/logger/logger.service';
 
 @Injectable()
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
@@ -16,10 +15,10 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private readonly experienceService: ExperienceService,
-    private readonly loggerService: AppLoggerService
+    private readonly loggerService: AppLoggerService,
   ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
     if (!this.groupId || !this.botToken) {
@@ -36,9 +35,13 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     this.registerMessageHandlers();
     this.registerReactionHandlers();
 
-    await this.bot.start({
-      allowed_updates: ['message', 'message_reaction'],
-    });
+    this.bot
+      .start({
+        allowed_updates: ['message', 'message_reaction'],
+      })
+      .catch((err) => {
+        this.loggerService.error('Ошибка при запуске бота:', err);
+      });
   }
 
   async onModuleDestroy() {
@@ -119,6 +122,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
   }
+
   private registerMessageHandlers() {
     this.bot.on('message', async (ctx) => {
       const telegramId = ctx.from?.id;
