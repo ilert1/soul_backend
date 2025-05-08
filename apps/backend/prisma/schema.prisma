@@ -294,6 +294,11 @@ enum ExperienceType {
     PREMIUM_SUPPORT
     PROFILE_COMPLETED
     VIEWED_HOW_IT_WORKS
+    MESSAGE
+    REACTION
+    REPLY
+    RECEIVED_REACTION
+    RECEIVED_REPLY
 }
 
 model Experience {
@@ -412,4 +417,13 @@ model Admin {
 enum LeaderboardType {
     XP
     SP
+}
+
+model Messages {
+    messageId      BigInt   @unique @map("message_id")
+    chatId         BigInt   @map("chat_id")
+    telegramUserId BigInt   @map("telegram_user_id")
+    createdAt      DateTime @default(now()) @map("created_at")
+
+    @@map("messages")
 }
