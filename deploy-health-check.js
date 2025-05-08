@@ -13,7 +13,7 @@ class DeployHealthCheck {
 
   makeHealthCheck() {
     exec(
-      'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/docs',
+      'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3005/docs',
       (error, stdout) => {
         console.log("stdout: ", stdout);
         const time = new Date().toLocaleTimeString();
