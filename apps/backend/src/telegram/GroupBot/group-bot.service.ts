@@ -9,6 +9,8 @@ import { AppLoggerService } from 'src/modules/logger/logger.service';
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private welcomeMessages = new Map<number, number>();
+  private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
+  private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
 
   constructor(
     private prisma: PrismaService,
@@ -19,7 +21,15 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
-    this.bot = new Bot(process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '');
+    if (!this.groupId || !this.botToken) {
+      this.loggerService.error(
+        'TELEGRAM_GROUP_BOT_TOKEN or TELEGRAM_GROUP_ID is not defined',
+      );
+
+      return;
+    }
+
+    this.bot = new Bot(this.botToken);
 
     this.registerHello();
     this.registerMessageHandlers();
@@ -85,6 +95,32 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       );
       this.welcomeMessages.set(chatId, welcome.message_id);
     });
+  }
+
+  async userIsChatMember(telegramUserId: number): Promise<boolean> {
+    try {
+      const result = await this.bot.api.getChatMember(
+        this.groupId,
+        telegramUserId,
+      );
+
+      return !!result;
+    } catch {
+      return false;
+    }
+  }
+
+  async userIsBoosted(telegramUserId: number): Promise<boolean> {
+    try {
+      const result = await this.bot.api.getUserChatBoosts(
+        this.groupId,
+        telegramUserId,
+      );
+
+      return result.boosts.length > 0;
+    } catch {
+      return false;
+    }
   }
 
   private registerMessageHandlers() {
