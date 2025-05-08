@@ -3,6 +3,7 @@ import { ExperienceType } from '@prisma/client';
 import { Bot, InputFile } from 'grammy';
 import { ExperienceService } from 'src/modules/experience/experience.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
+import { AppLoggerService } from 'src/modules/logger/logger.service';
 
 @Injectable()
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
@@ -12,6 +13,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private readonly experienceService: ExperienceService,
+    private readonly loggerService: AppLoggerService,
   ) {}
 
   onModuleInit() {
@@ -28,7 +30,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
         allowed_updates: ['message', 'message_reaction'],
       })
       .catch((err) => {
-        console.error('Ошибка при запуске бота:', err);
+        this.loggerService.error('Ошибка при запуске бота:', err);
       });
   }
 
