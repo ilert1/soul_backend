@@ -118,7 +118,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     } catch {
       return false;
     }
-
+  }
   private registerMessageHandlers() {
     this.bot.on('message', async (ctx) => {
       const telegramId = ctx.from?.id;
