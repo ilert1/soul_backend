@@ -8,7 +8,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LeaderboardType, Prisma, TaskList, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/pagination.utils';
 import {
   ActivityWithUserResponseDto,
@@ -16,6 +15,7 @@ import {
 } from './dto/user-response.dto';
 import { TaskManagementService } from '../task/services/task-management.service';
 import { PaginatedResult } from 'src/common/types/paginarted-result';
+import { LeaderboardPositionDto } from './dto/leaderboard-response.dto';
 
 @Injectable()
 export class UserService {
@@ -37,21 +37,28 @@ export class UserService {
     return await this.prisma.user.create({ data });
   }
 
-  async findAll(paginationDto: PaginationDto, search: string) {
-    return await paginate<UserResponseDto>({
-      prisma: this.prisma,
-      model: 'user',
-      paginationDto,
-      options: {
-        where: { isActive: true },
-        order: { createdAt: 'desc' },
-        searchQuery: search,
-        searchFields: ['fullName'],
-        excludeFields: this.excludeFields,
-        include: { telegramUser: true, avatarImage: true },
-      },
-    });
-  }
+  // async findAll(paginationDto: PaginationDto, search: string) {
+  //  return await paginate<UserResponseDto>({
+  //    prisma: this.prisma,
+  //    model: 'user',
+  //    paginationDto,
+  //    options: {
+  //      where: { isActive: true },
+  //      order: { createdAt: 'desc' },
+  //      searchQuery: search,
+  //      searchFields: ['fullName'],
+  //      excludeFields: this.excludeFields,
+  //      select: {
+  //        id: true,
+  //        fullName: true,
+  //        avatarImage: {
+  //          id: true,
+  //          mimeType: true,
+  //        },
+  //      },
+  //    },
+  //  });
+  // }
 
   async findOne(id: string) {
     return await this.prisma.user.findUniqueOrThrow({
@@ -63,10 +70,36 @@ export class UserService {
   async findMe(id: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        fullName: true,
+        username: true,
+        languageCode: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        experience: true,
+        rank: true,
+        totalInvites: true,
+        availableInvites: true,
+        totalReferralPoints: true,
+        showActivityToOthers: true,
+        showSoulPointsToOthers: true,
+        farmingTime: true,
+        farmingRate: true,
         country: true,
-        wallet: true,
-        avatarImage: true,
+        wallet: {
+          select: {
+            id: true,
+            balance: true,
+          },
+        },
+        avatarImage: {
+          select: {
+            id: true,
+            mimeType: true,
+          },
+        },
       },
     });
 
@@ -76,10 +109,36 @@ export class UserService {
   async findById(id: string, requestingUserId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        fullName: true,
+        username: true,
+        languageCode: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        experience: true,
+        rank: true,
+        totalInvites: true,
+        availableInvites: true,
+        totalReferralPoints: true,
+        showActivityToOthers: true,
+        showSoulPointsToOthers: true,
+        farmingTime: true,
+        farmingRate: true,
         country: true,
-        wallet: true,
-        avatarImage: true,
+        wallet: {
+          select: {
+            id: true,
+            balance: true,
+          },
+        },
+        avatarImage: {
+          select: {
+            id: true,
+            mimeType: true,
+          },
+        },
       },
     });
 
@@ -89,9 +148,7 @@ export class UserService {
     ) {
       return user;
     } else {
-      const { wallet: _wallet, ...userWithoitWallet } = user;
-
-      return userWithoitWallet;
+      return { ...user, wallet: null };
     }
   }
 
@@ -111,11 +168,38 @@ export class UserService {
 
     const result = await this.prisma.user.update({
       where: { id },
-      data,
-      include: {
+      select: {
+        id: true,
+        fullName: true,
+        username: true,
+        languageCode: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        experience: true,
+        rank: true,
+        totalInvites: true,
+        availableInvites: true,
+        totalReferralPoints: true,
+        showActivityToOthers: true,
+        showSoulPointsToOthers: true,
+        farmingTime: true,
+        farmingRate: true,
         country: true,
-        wallet: true,
+        wallet: {
+          select: {
+            id: true,
+            balance: true,
+          },
+        },
+        avatarImage: {
+          select: {
+            id: true,
+            mimeType: true,
+          },
+        },
       },
+      data,
     });
 
     // Подтверждение задания
@@ -129,17 +213,17 @@ export class UserService {
     return result;
   }
 
-  async banUser(id: string, isActive: boolean) {
+  async banUser(id: string, isActive: boolean): Promise<void> {
     await this.prisma.user.findUniqueOrThrow({ where: { id } });
 
-    return await this.prisma.user.update({
+    await this.prisma.user.update({
       where: { id },
       data: { isActive },
     });
   }
 
   async remove(id: string) {
-    return await this.prisma.user.delete({
+    await this.prisma.user.delete({
       where: { id },
     });
   }
@@ -244,9 +328,21 @@ export class UserService {
           isActive: true,
           ...countryWhere,
         },
-        include: {
-          avatarImage: true,
-          country: true,
+        select: {
+          id: true,
+          fullName: true,
+          avatarImage: {
+            select: {
+              id: true,
+              mimeType: true,
+            },
+          },
+          experience: true,
+          wallet: {
+            select: {
+              balance: true,
+            },
+          },
         },
         orderBy: [
           {
@@ -267,11 +363,11 @@ export class UserService {
         wallet: {
           isNot: null,
         },
+        showSoulPointsToOthers: true,
       },
       select: {
         id: true,
         fullName: true,
-        showSoulPointsToOthers: true,
         wallet: {
           select: {
             balance: true,
@@ -304,7 +400,7 @@ export class UserService {
     filter?: string;
     countryId?: number;
     userId: string;
-  }) {
+  }): Promise<LeaderboardPositionDto> {
     const currentUser = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId, wallet: { isNot: null } },
       include: {
