@@ -1,24 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 
-@Exclude()
 export class UserAvatarImage {
-  @Expose()
+  @ApiProperty({
+    description: 'ID изображения',
+    example: '011e9a67-b855-444a-a74b-d15445d12983',
+  })
   id: string;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Тип изображения',
+    example: 'image/svg+xml',
+  })
   mimeType: string;
 }
-@Exclude()
+
 export class UserResponseDto {
-  @Expose()
   @ApiProperty({
     example: 'a33e4beb-b15b-4e0b-b52c-6ac149fa413a',
     description: 'ID пользователя',
   })
   id: string;
 
-  @Expose()
   @ApiProperty({
     example: 'Иван Иванов',
     description: 'Имя пользователя',
@@ -26,7 +29,6 @@ export class UserResponseDto {
   })
   fullName: string | null;
 
-  @Expose()
   @Type(() => UserAvatarImage)
   @ApiProperty({
     example: {

@@ -75,6 +75,7 @@ jobs:
             docker compose -f docker-compose.deploy.yml up -d --build backend admin
             docker image prune -a -f
             docker builder prune -f
+            node deploy-health-check.js 
           EOF
         env:
           DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}

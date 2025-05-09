@@ -1,22 +1,47 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ExperienceType } from '@prisma/client';
 import { Bot, InputFile } from 'grammy';
-import { run } from '@grammyjs/runner';
+import { ExperienceService } from 'src/modules/experience/experience.service';
+import { PrismaService } from 'src/modules/prisma/prisma.service';
+import { AppLoggerService } from 'src/modules/logger/logger.service';
 
 @Injectable()
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private welcomeMessages = new Map<number, number>();
+  private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
+  private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
 
-  constructor() {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly experienceService: ExperienceService,
+    private readonly loggerService: AppLoggerService,
+  ) {}
 
   onModuleInit() {
     if (process.env.GROUP_BOT_ACTIVE === 'false') return;
 
-    this.bot = new Bot(process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '');
+    if (!this.groupId || !this.botToken) {
+      this.loggerService.error(
+        'TELEGRAM_GROUP_BOT_TOKEN or TELEGRAM_GROUP_ID is not defined',
+      );
+
+      return;
+    }
+
+    this.bot = new Bot(this.botToken);
 
     this.registerHello();
+    this.registerMessageHandlers();
+    this.registerReactionHandlers();
 
-    run(this.bot);
+    this.bot
+      .start({
+        allowed_updates: ['message', 'message_reaction'],
+      })
+      .catch((err) => {
+        this.loggerService.error('Ошибка при запуске бота:', err);
+      });
   }
 
   async onModuleDestroy() {
@@ -69,6 +94,156 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
         },
       );
       this.welcomeMessages.set(chatId, welcome.message_id);
+    });
+  }
+
+  async userIsChatMember(telegramUserId: number): Promise<boolean> {
+    try {
+      const result = await this.bot.api.getChatMember(
+        this.groupId,
+        telegramUserId,
+      );
+
+      return !!result;
+    } catch {
+      return false;
+    }
+  }
+
+  async userIsBoosted(telegramUserId: number): Promise<boolean> {
+    try {
+      const result = await this.bot.api.getUserChatBoosts(
+        this.groupId,
+        telegramUserId,
+      );
+
+      return result.boosts.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private registerMessageHandlers() {
+    this.bot.on('message', async (ctx) => {
+      const telegramId = ctx.from?.id;
+      const telegramIdStr = telegramId?.toString();
+
+      let currentUserId: string | null = null;
+
+      if (telegramIdStr) {
+        const userExists = await this.prisma.telegramUser.findUnique({
+          where: { telegramId: telegramIdStr },
+          select: { userId: true },
+        });
+
+        currentUserId = userExists?.userId ?? null;
+      }
+
+      // Если это ответ на сообщение
+      if (ctx.message.reply_to_message) {
+        const originalMessageUserId = ctx.message.reply_to_message.from?.id;
+
+        // Опыт для ответчика (если зарегистрирован) и только если это чужое сообщение
+        if (currentUserId) {
+          if (originalMessageUserId !== telegramId) {
+            await this.experienceService.addExperience({
+              userId: currentUserId,
+              type: ExperienceType.REPLY,
+            });
+          } else {
+            await this.experienceService.addExperience({
+              userId: currentUserId,
+              type: ExperienceType.MESSAGE,
+            });
+          }
+        }
+
+        // Опыт для автора оригинального сообщения (если он другой и зарегистрирован)
+        if (originalMessageUserId && originalMessageUserId !== telegramId) {
+          const originalUser = await this.prisma.telegramUser.findUnique({
+            where: { telegramId: originalMessageUserId.toString() },
+            select: { userId: true },
+          });
+
+          if (originalUser?.userId) {
+            await this.experienceService.addExperience({
+              userId: originalUser.userId,
+              type: ExperienceType.RECEIVED_REPLY,
+            });
+          }
+        }
+      } else {
+        // Обычное сообщение (только если отправитель зарегистрирован)
+        if (currentUserId) {
+          await this.experienceService.addExperience({
+            userId: currentUserId,
+            type: ExperienceType.MESSAGE,
+          });
+        }
+      }
+
+      if (currentUserId) {
+        await this.prisma.messages.create({
+          data: {
+            messageId: ctx.message.message_id,
+            chatId: ctx.chat.id,
+            telegramUserId: telegramId,
+          },
+        });
+      }
+    });
+  }
+
+  private registerReactionHandlers() {
+    this.bot.on('message_reaction', async (ctx) => {
+      const reaction = ctx.update.message_reaction;
+      const telegramId = reaction.user?.id;
+      const messageId = reaction.message_id;
+
+      if (!telegramId || !messageId) return;
+
+      const telegramIdStr = telegramId.toString();
+
+      // Параллельно получаем пользователя и сообщение
+      const [user, message] = await Promise.all([
+        this.prisma.telegramUser.findUnique({
+          where: { telegramId: telegramIdStr },
+          select: { userId: true },
+        }),
+        this.prisma.messages.findUnique({
+          where: { messageId },
+          select: { telegramUserId: true },
+        }),
+      ]);
+
+      const userId = user?.userId;
+      const originalTelegramUserId = message?.telegramUserId;
+
+      // Если пользователь существует — начисляем опыт за реакцию если это чужое сообщение
+      if (userId && message?.telegramUserId !== BigInt(telegramId)) {
+        await this.experienceService.addExperience({
+          userId,
+          type: ExperienceType.REACTION,
+        });
+      }
+
+      // Если автор сообщения найден и это не сам реактор — начисляем опыт автору
+      if (
+        originalTelegramUserId &&
+        originalTelegramUserId !== BigInt(telegramId)
+      ) {
+        const originalUser = await this.prisma.telegramUser.findUnique({
+          where: { telegramId: originalTelegramUserId.toString() },
+          select: { userId: true },
+        });
+
+        if (originalUser?.userId) {
+          await this.experienceService.addExperience({
+            userId: originalUser.userId,
+            type: ExperienceType.RECEIVED_REACTION,
+          });
+        }
+      }
     });
   }
 }
