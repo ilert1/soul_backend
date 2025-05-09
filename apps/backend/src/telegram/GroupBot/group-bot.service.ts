@@ -4,8 +4,8 @@ import { Bot, InputFile } from 'grammy';
 import { ExperienceService } from 'src/modules/experience/experience.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { AppLoggerService } from 'src/modules/logger/logger.service';
-import { experiencePoints } from 'src/modules/experience/dto/constants';
 import { UserExperienceBufferDto } from 'src/modules/experience/dto/experience.dto';
+import { GratitudeDetectorService } from './gratitude/gratitude-detector.service';
 
 type DataBuffer = {
   [userId: string]: {
@@ -20,12 +20,18 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private welcomeMessages = new Map<number, number>();
   private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
   private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
+  private readonly xpCollectInterval = process.env
+    .GROUP_BOT_FORUM_REWARD_COLLECT_INTERVAL_MS
+    ? Number(process.env.GROUP_BOT_FORUM_REWARD_COLLECT_INTERVAL_MS)
+    : 60000;
+
   private dataBuffer: DataBuffer = {};
 
   constructor(
     private prisma: PrismaService,
     private readonly experienceService: ExperienceService,
     private readonly loggerService: AppLoggerService,
+    private detector: GratitudeDetectorService,
   ) {}
 
   onModuleInit() {
@@ -49,15 +55,15 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       .start({
         allowed_updates: ['message', 'message_reaction'],
       })
-      .catch((err) => {
-        this.loggerService.error('Ошибка при запуске бота:', err);
+      .catch((error) => {
+        this.loggerService.error('Ошибка при запуске бота:', error);
       });
 
     setInterval(() => {
-      this.flushDataBuffer().catch((err) => {
-        this.loggerService.error('Ошибка при отправке опыта:', err);
+      this.flushDataBuffer().catch((error) => {
+        this.loggerService.error('Ошибка при отправке xp или sp:', error);
       });
-    }, 60000);
+    }, this.xpCollectInterval);
   }
 
   async onModuleDestroy() {
@@ -143,6 +149,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     this.bot.on('message', async (ctx) => {
       const telegramId = ctx.from?.id;
       const telegramIdStr = telegramId?.toString();
+      const messageText = ctx.message.text;
 
       let currentUserId: string | null = null;
 
@@ -176,9 +183,17 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
           });
 
           if (originalUser?.userId) {
+            // Проверка на благодарность
+            let isGratitude = false;
+
+            if (messageText) {
+              isGratitude = await this.detector.isGratitude(messageText);
+            }
+
             this.addXPToDataBuffer(
               originalUser.userId,
               ExperienceType.RECEIVED_REPLY,
+              isGratitude ? 1 : undefined,
             );
           }
         }
@@ -258,12 +273,14 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
             this.addXPToDataBuffer(
               originalUser.userId,
               ExperienceType.RECEIVED_REACTION,
+              1,
             );
           } else {
             // Если реакция удалена
             this.removeXPFromDataBuffer(
               originalUser.userId,
               ExperienceType.RECEIVED_REACTION,
+              1,
             );
           }
         }
@@ -271,7 +288,11 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private addXPToDataBuffer(userId: string, type: ExperienceType) {
+  private addXPToDataBuffer(
+    userId: string,
+    type: ExperienceType,
+    amount?: number,
+  ) {
     if (!this.dataBuffer[userId]) {
       this.dataBuffer[userId] = { xp: {}, sp: 0 };
     }
@@ -285,9 +306,17 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     if (currentCount < 10) {
       xpMap[type] = currentCount + 1;
     }
+
+    if (amount) {
+      this.dataBuffer[userId].sp += amount;
+    }
   }
 
-  private removeXPFromDataBuffer(userId: string, type: ExperienceType) {
+  private removeXPFromDataBuffer(
+    userId: string,
+    type: ExperienceType,
+    amount?: number,
+  ) {
     const buffer = this.dataBuffer[userId];
 
     if (!buffer) return;
@@ -301,6 +330,10 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       if (xpMap[type] === 0) {
         delete xpMap[type];
       }
+    }
+
+    if (amount) {
+      this.dataBuffer[userId].sp -= amount;
     }
 
     // Если и xp и sp пустые — удаляем всю запись
@@ -319,10 +352,18 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       const userExperience: UserExperienceBufferDto = {
         userId,
         xp: data.xp,
-        // sp: data.sp,
       };
 
       await this.experienceService.processUserExperienceBuffer(userExperience);
+
+      if (data.sp > 0) {
+        await this.prisma.telegramUser.update({
+          where: { userId },
+          data: {
+            forumReward: { increment: data.sp },
+          },
+        });
+      }
     }
   }
 }

@@ -8,7 +8,7 @@ import { TaskList, TaskStatus, TaskType } from '@prisma/client';
 import { UserTaskProgressResponseDto } from '../dto/task-response.dto';
 import { TaskProgressService } from './task-progress.service';
 import { TelegramClientService } from 'src/modules/telegramClient/telegramClient.service';
-import { GroupBotService } from 'src/telegram/GroupBot/group-bot.service';
+import { GroupBotService } from 'src/telegram/groupBot/group-bot.service';
 
 @Injectable()
 export class TaskWeeklyService {
