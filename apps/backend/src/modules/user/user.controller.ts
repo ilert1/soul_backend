@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Query,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -19,7 +11,6 @@ import {
 import { LeaderboardType } from '@prisma/client';
 import { User } from 'src/common/decorators/current-user.decorator';
 import { IdParamDto } from 'src/common/dto/id-param.dto';
-import { TransformFieldInterceptor } from 'src/common/interceptors/transform-field.interceptor';
 import { UserPayload } from 'src/common/types/user-payload.dto';
 import {
   LeaderbeardPositionExample,
@@ -42,7 +33,6 @@ import { DEFAULT_PAGE_SIZE } from 'src/common/utils/constants';
 @ApiTags('User')
 @ApiBearerAuth()
 @Controller('user')
-@UseInterceptors(TransformFieldInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
   @Get('me')
