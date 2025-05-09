@@ -28,6 +28,7 @@ export class EventParticipationService {
     creatorId: string,
   ) {
     const activityId = decrypt(confirmParticipationDto.activityHash);
+      
     const activity = await this.prisma.activity.findUniqueOrThrow({
       where: { id: activityId },
       include: { event: { include: { place: true } } },

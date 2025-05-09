@@ -8,7 +8,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
-class CountryDto {
+export class CountryDto {
   @ApiProperty({ example: 2, description: 'Идентификатор страны' })
   id: number;
 
