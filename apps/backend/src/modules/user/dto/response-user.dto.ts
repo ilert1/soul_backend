@@ -1,92 +1,148 @@
-import { Exclude, Expose, Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
-@Exclude()
 export class UserWalletDto {
-  @Expose()
+  @ApiProperty({
+    description: 'Уникальный идентификатор кошелька пользователя',
+    example: 'ce127619-2ff7-40b1-b63e-5a757bde574e',
+  })
   id: string;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Баланс кошелька пользователя',
+    example: 1020,
+  })
   balance: number;
 }
 
-@Exclude()
 export class UserCountryDto {
-  @Expose()
+  @ApiProperty({ example: 2, description: 'Идентификатор страны' })
   id: number;
 
-  @Expose()
+  @ApiProperty({ example: 'Japan', description: 'Название страны' })
   name: string;
 
-  @Expose()
+  @ApiProperty({ example: 'JP', description: 'Код страны' })
   code: string;
 }
 
-@Exclude()
 export class UserAvatarImage {
-  @Expose()
+  @ApiProperty({
+    description: 'ID изображения',
+    example: '011e9a67-b855-444a-a74b-d15445d12983',
+  })
   id: string;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Тип изображения',
+    example: 'image/svg+xml',
+  })
   mimeType: string;
 }
-@Exclude()
+
 export class UserGlobalResponseDto {
-  @Expose()
+  @ApiProperty({
+    description: 'Уникальный идентификатор пользователя',
+    example: 'ba30f562-67a8-4fe5-81a5-000ebbd2e06f',
+  })
   id: string;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Полное имя пользователя',
+    example: 'text text',
+  })
   fullName: string;
 
-  @Expose()
-  username: string;
+  @ApiProperty({
+    description: 'Имя пользователя',
+    example: 'text',
+  })
+  username: string | null;
 
-  @Expose()
-  languageCode: string;
+  @ApiProperty({
+    description: 'Код языка',
+    example: 'ru',
+  })
+  languageCode: string | null;
 
-  @Expose()
-  description: string;
+  @ApiProperty({
+    description: 'Описание пользователя',
+    example: '',
+  })
+  description: string | null;
 
-  @Expose()
-  createdAt: string;
+  @ApiProperty({
+    description: 'Дата создания пользователя',
+    example: '2025-05-03T23:56:34.419Z',
+  })
+  createdAt: Date;
 
-  @Expose()
-  updatedAt: string;
+  @ApiProperty({
+    description: 'Дата последнего обновления пользователя',
+    example: '2025-05-08T11:15:40.078Z',
+  })
+  updatedAt: Date;
 
-  @Expose()
-  country: UserCountryDto;
-
-  @Expose()
+  @ApiProperty({
+    description: 'Опыт пользователя',
+    example: 0,
+  })
   experience: number;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Ранг пользователя',
+    example: 'user',
+  })
   rank: string;
 
-  @Expose()
-  @Type(() => UserWalletDto)
-  wallet: UserWalletDto;
-
-  @Expose()
+  @ApiProperty({
+    description: 'Общее количество приглашений',
+    example: 3,
+  })
   totalInvites: number;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Количество доступных приглашений',
+    example: 3,
+  })
   availableInvites: number;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Общее количество реферальных баллов',
+    example: 0,
+  })
   totalReferralPoints: number;
 
-  @Expose()
-  showSoulPointsToOthers: boolean;
-
-  @Expose()
+  @ApiProperty({
+    description: 'Показывать ли активности другим пользователям',
+    example: 'true',
+  })
   showActivityToOthers: boolean;
 
-  @Expose()
-  @Type(() => UserAvatarImage)
-  avatarImage: UserAvatarImage;
+  @ApiProperty({
+    description: 'Показывать ли соул-пойнты другим пользователям',
+    example: 'true',
+  })
+  showSoulPointsToOthers: boolean;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Время фарминга в профиле пользователя',
+    example: 28800000,
+  })
   farmingTime: number;
 
-  @Expose()
+  @ApiProperty({
+    description: 'Параметры фарминга',
+    example: 1,
+  })
   farmingRate: number;
+
+  @Type(() => UserCountryDto)
+  country: UserCountryDto | null;
+
+  @Type(() => UserWalletDto)
+  wallet: UserWalletDto | null;
+
+  @Type(() => UserAvatarImage)
+  avatarImage: UserAvatarImage | null;
 }

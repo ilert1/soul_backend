@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Query,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,9 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { LeaderboardType } from '@prisma/client';
 import { User } from 'src/common/decorators/current-user.decorator';
-import { TransformField } from 'src/common/decorators/transform-field.decorator';
 import { IdParamDto } from 'src/common/dto/id-param.dto';
-import { TransformFieldInterceptor } from 'src/common/interceptors/transform-field.interceptor';
 import { UserPayload } from 'src/common/types/user-payload.dto';
 import {
   LeaderbeardPositionExample,
@@ -43,7 +33,6 @@ import { DEFAULT_PAGE_SIZE } from 'src/common/utils/constants';
 @ApiTags('User')
 @ApiBearerAuth()
 @Controller('user')
-@UseInterceptors(TransformFieldInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
   @Get('me')
@@ -56,8 +45,7 @@ export class UserController {
     },
   })
   @ApiResponse({ status: 401, description: 'Неавторизованный доступ' })
-  @TransformField({ '': UserGlobalResponseDto })
-  async getProfile(@User() user: UserPayload) {
+  async getProfile(@User() user: UserPayload): Promise<UserGlobalResponseDto> {
     return await this.userService.findMe(user.id);
   }
 
@@ -91,7 +79,6 @@ export class UserController {
       },
     },
   })
-  @TransformField({ '': LeaderboardDto })
   async getLeaderboard(
     @Query('filter') filter: LeaderboardType,
     @Query('countryId') countryId?: number,
@@ -129,7 +116,6 @@ export class UserController {
       example: LeaderbeardPositionExample,
     },
   })
-  @TransformField({ '': LeaderboardPositionDto })
   async getPositionInLeaderboard(
     @User() user: UserPayload,
     @Query('filter') filter?: string,
@@ -157,8 +143,10 @@ export class UserController {
     },
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  @TransformField({ '': UserGlobalResponseDto })
-  async findOne(@Param() { id }: IdParamDto, @User() user: UserPayload) {
+  async findOne(
+    @Param() { id }: IdParamDto,
+    @User() user: UserPayload,
+  ): Promise<UserGlobalResponseDto> {
     return await this.userService.findById(id, user.id);
   }
 
@@ -183,11 +171,10 @@ export class UserController {
     },
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  @TransformField({ '': UserGlobalResponseDto })
   async updateUser(
     @User() user: UserPayload,
     @Body() updateUserDto: UpdateUserDto,
-  ) {
+  ): Promise<UserGlobalResponseDto> {
     return await this.userService.updateUser(user.id, updateUserDto);
   }
 
@@ -218,7 +205,6 @@ export class UserController {
     type: [UserResponseDto],
   })
   @ApiResponse({ status: 404, description: 'Событие не найдено.' })
-  @TransformField({ '': UserResponseDto })
   async getUsersByEventId(
     @Param('eventId') eventId: string,
     @Query('limit') limit: number = DEFAULT_PAGE_SIZE,
@@ -249,11 +235,10 @@ export class UserController {
     description: 'Пользователь успешно заблокирован/разблокирован',
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  @TransformField({ '': UserGlobalResponseDto })
   async banUser(
     @Param() { id }: IdParamDto,
     @Body('isActive') isActive: boolean,
-  ) {
+  ): Promise<void> {
     return await this.userService.banUser(id, isActive);
   }
 
@@ -272,7 +257,6 @@ export class UserController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден.' })
-  @TransformField({ '': UserResponseDto })
   async getUserByActivityId(
     @Param('activityId') activityId: string,
   ): Promise<UserResponseDto | null> {
@@ -307,7 +291,6 @@ export class UserController {
   //     example: UserResponsePaginationExample,
   //   },
   // })
-  // @TransformField({ '': UserGlobalResponseDto })
   // async findAll(
   //   @Query('limit') limit: number = DEFAULT_PAGE_SIZE,
   //   @Query('page') page: number = 1,
@@ -337,7 +320,6 @@ export class UserController {
   // })
   // @ApiResponse({ status: 400, description: 'Некорректные данные' })
   // @UsePipes()
-  // @TransformField({ '': UserGlobalResponseDto })
   // async create(@Body() createUserDto: CreateUserDto) {
   //   return await this.userService.create(createUserDto);
   // }
@@ -363,7 +345,6 @@ export class UserController {
   //   },
   // })
   // @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  // @TransformField({ '': UserGlobalResponseDto })
   // async update(
   //   @Param() { id }: IdParamDto,
   //   @Body() updateUserDto: UpdateUserDto,
