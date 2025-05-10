@@ -1,6 +1,6 @@
 import { ExperienceType } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsObject, IsOptional, IsInt, Min } from 'class-validator';
+import { IsObject } from 'class-validator';
 
 export class CreateExperienceDto {
   @ApiProperty({
