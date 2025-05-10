@@ -66,6 +66,7 @@ export class EventUserService {
         ...commonSelectOptions,
         finishDate: true,
         guestLimit: true,
+        deposit: true,
         activities: { select: { userId: true } },
       };
     }
