@@ -19,10 +19,7 @@ export class GratitudeDetectorService {
   private async initializeNLP() {
     this.nlpManager = new NlpManager({ languages: ['ru'], forceNER: true });
 
-    const modelPath = path.join(
-      process.cwd(),
-      'src/telegram/GroupBot/gratitude/model.nlp',
-    );
+    const modelPath = path.join(__dirname, 'model.nlp');
 
     if (fs.existsSync(modelPath)) {
       // Если модель уже есть — загружаем
@@ -33,10 +30,7 @@ export class GratitudeDetectorService {
     }
 
     // Загрузка шаблонов
-    const configPath = path.join(
-      process.cwd(),
-      'src/telegram/groupBot/gratitude/gratitude-words.json',
-    );
+    const configPath = path.join(__dirname, 'gratitude-words.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
     // Добавление шаблонов в NLP
@@ -51,10 +45,7 @@ export class GratitudeDetectorService {
   }
 
   private loadExceptions() {
-    const configPath = path.join(
-      process.cwd(),
-      'src/telegram/groupBot/gratitude/gratitude-words.json',
-    );
+    const configPath = path.join(__dirname, 'gratitude-words.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     config.exceptions.forEach((word: string) => {
       this.exceptions.add(word.toLowerCase());

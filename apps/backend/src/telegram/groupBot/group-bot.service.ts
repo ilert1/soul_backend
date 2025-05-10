@@ -6,6 +6,8 @@ import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { AppLoggerService } from 'src/modules/logger/logger.service';
 import { UserExperienceBufferDto } from 'src/modules/experience/dto/experience.dto';
 import { GratitudeDetectorService } from './gratitude/gratitude-detector.service';
+import { forumRewardCollectInterval } from 'src/modules/experience/dto/constants';
+import { xpTypeLimit } from './consts';
 
 type DataBuffer = {
   [userId: string]: {
@@ -20,10 +22,6 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private welcomeMessages = new Map<number, number>();
   private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
   private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
-  private readonly xpCollectInterval = process.env
-    .GROUP_BOT_FORUM_REWARD_COLLECT_INTERVAL_MS
-    ? Number(process.env.GROUP_BOT_FORUM_REWARD_COLLECT_INTERVAL_MS)
-    : 60000;
 
   private dataBuffer: DataBuffer = {};
 
@@ -63,7 +61,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       this.flushDataBuffer().catch((error) => {
         this.loggerService.error('Ошибка при отправке xp или sp:', error);
       });
-    }, this.xpCollectInterval);
+    }, forumRewardCollectInterval);
   }
 
   async onModuleDestroy() {
@@ -302,8 +300,8 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     // Получаем текущее количество этого типа опыта
     const currentCount = xpMap[type] ?? 0;
 
-    // Добавляем только если количество меньше 10
-    if (currentCount < 10) {
+    // Добавляем только если количество меньше xpTypeLimit
+    if (currentCount < xpTypeLimit) {
       xpMap[type] = currentCount + 1;
     }
 

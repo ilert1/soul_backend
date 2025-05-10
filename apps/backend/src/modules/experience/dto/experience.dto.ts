@@ -21,7 +21,6 @@ export class UserExperienceBufferDto {
     example: 'a33e4beb-b15b-4e0b-b52c-6ac149fa413a',
     description: 'ID пользователя, которому начисляется опыт',
   })
-  @IsUUID()
   userId: string;
 
   @ApiProperty({

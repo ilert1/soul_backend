@@ -39,7 +39,7 @@ export class GroupBotScheduleService {
     this.loggerService.log('creditForumReward started');
 
     try {
-      const users = await this.prisma.telegramUser.findMany({
+      const tgUsers = await this.prisma.telegramUser.findMany({
         where: {
           forumReward: {
             gt: 0,
@@ -49,38 +49,41 @@ export class GroupBotScheduleService {
           telegramId: true,
           userId: true,
           forumReward: true,
+          user: {
+            select: {
+              wallet: { select: { id: true } },
+            },
+          },
         },
       });
 
-      for (const user of users) {
-        const wallet = await this.prisma.wallet.findFirst({
-          where: { userId: user.userId },
-        });
-
-        if (!wallet) {
-          this.loggerService.error(`User ${user.userId} has no wallet`);
+      for (const tgUser of tgUsers) {
+        if (!tgUser.user?.wallet || !tgUser.user.wallet.id) {
+          this.loggerService.error(`User ${tgUser.userId} has no wallet`);
 
           continue;
         }
 
         await this.prisma.$transaction(async (tx) => {
           try {
-            await this.transactionCreateService.createTransactionFromSystemWallet(
-              tx,
-              wallet.id,
-              user.forumReward,
-              TransactionType.FORUM_REWARD,
-            );
+            if (tgUser?.user?.wallet?.id) {
+              await this.transactionCreateService.createTransactionFromSystemWallet(
+                tx,
+                tgUser.user.wallet.id,
+                tgUser.forumReward,
+                TransactionType.FORUM_REWARD,
+              );
 
-            await tx.telegramUser.update({
-              where: { telegramId: user.telegramId },
-              data: {
-                forumReward: 0,
-              },
-            });
+              await tx.telegramUser.update({
+                where: { telegramId: tgUser.telegramId },
+                data: {
+                  forumReward: 0,
+                },
+              });
+            }
           } catch (error) {
             this.loggerService.error(
-              `Failed to credit rewards for ${user.userId}`,
+              `Failed to credit rewards for ${tgUser.userId}`,
               error,
             );
           }
