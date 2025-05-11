@@ -71,7 +71,7 @@ jobs:
             cd ../..
             docker network inspect backend-net || docker network create backend-net
             docker compose -f docker-compose.deploy.yml up -d db
-            docker compose -f docker-compose.deploy.yml up migrate
+            docker compose -f docker-compose.deploy.yml up -d --build migrate
             docker compose -f docker-compose.deploy.yml up -d --build backend admin
             docker image prune -a -f
             docker builder prune -f
