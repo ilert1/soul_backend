@@ -220,7 +220,7 @@ export const tasks = [
     title: 'Пригласите 5 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
     goal: 5,
-    rewardSp: 200,
+    rewardSp: 800,
   },
   {
     key: TaskList.INVITED_10_FRIENDS,
@@ -228,7 +228,7 @@ export const tasks = [
     title: 'Пригласите 10 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
     goal: 10,
-    rewardSp: 200,
+    rewardSp: 1000,
   },
   {
     key: TaskList.INVITED_20_FRIENDS,
@@ -236,7 +236,7 @@ export const tasks = [
     title: 'Пригласите 20 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
     goal: 20,
-    rewardSp: 200,
+    rewardSp: 2000,
   },
   {
     key: TaskList.INVITED_50_FRIENDS,
@@ -244,7 +244,7 @@ export const tasks = [
     title: 'Пригласите 50 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
     goal: 50,
-    rewardSp: 200,
+    rewardSp: 6000,
   },
   {
     key: TaskList.INVITED_100_FRIENDS,
@@ -252,7 +252,7 @@ export const tasks = [
     title: 'Пригласите 100 друзей',
     description: 'Приглашайте своих друзей, чтобы получить награды!',
     goal: 100,
-    rewardSp: 200,
+    rewardSp: 10000,
   },
   {
     key: TaskList.COLLECTED_SP,
