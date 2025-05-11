@@ -4,6 +4,17 @@ import { Bot, InputFile } from 'grammy';
 import { ExperienceService } from 'src/modules/experience/experience.service';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 import { AppLoggerService } from 'src/modules/logger/logger.service';
+import { UserExperienceBufferDto } from 'src/modules/experience/dto/experience.dto';
+import { GratitudeDetectorService } from './gratitude/gratitude-detector.service';
+import { FORUM_REWARD_COLLECT_INTERVAL_MS } from 'src/modules/experience/dto/constants';
+import { XP_TYPE_LIMIT } from './constants';
+
+type DataBuffer = {
+  [userId: string]: {
+    xp: { [key in ExperienceType]?: number };
+    sp: number;
+  };
+};
 
 @Injectable()
 export class GroupBotService implements OnModuleInit, OnModuleDestroy {
@@ -12,10 +23,13 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
   private readonly groupId = process.env.TELEGRAM_GROUP_ID ?? '';
   private readonly botToken = process.env.TELEGRAM_GROUP_BOT_TOKEN ?? '';
 
+  private dataBuffer: DataBuffer = {};
+
   constructor(
     private prisma: PrismaService,
     private readonly experienceService: ExperienceService,
     private readonly loggerService: AppLoggerService,
+    private detector: GratitudeDetectorService,
   ) {}
 
   onModuleInit() {
@@ -39,9 +53,15 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       .start({
         allowed_updates: ['message', 'message_reaction'],
       })
-      .catch((err) => {
-        this.loggerService.error('Ошибка при запуске бота:', err);
+      .catch((error) => {
+        this.loggerService.error('Ошибка при запуске бота:', error);
       });
+
+    setInterval(() => {
+      this.flushDataBuffer().catch((error) => {
+        this.loggerService.error('Ошибка при отправке xp или sp:', error);
+      });
+    }, FORUM_REWARD_COLLECT_INTERVAL_MS);
   }
 
   async onModuleDestroy() {
@@ -127,6 +147,7 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
     this.bot.on('message', async (ctx) => {
       const telegramId = ctx.from?.id;
       const telegramIdStr = telegramId?.toString();
+      const messageText = ctx.message.text;
 
       let currentUserId: string | null = null;
 
@@ -146,15 +167,9 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
         // Опыт для ответчика (если зарегистрирован) и только если это чужое сообщение
         if (currentUserId) {
           if (originalMessageUserId !== telegramId) {
-            await this.experienceService.addExperience({
-              userId: currentUserId,
-              type: ExperienceType.REPLY,
-            });
+            this.addXPToDataBuffer(currentUserId, ExperienceType.REPLY);
           } else {
-            await this.experienceService.addExperience({
-              userId: currentUserId,
-              type: ExperienceType.MESSAGE,
-            });
+            this.addXPToDataBuffer(currentUserId, ExperienceType.MESSAGE);
           }
         }
 
@@ -166,19 +181,24 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
           });
 
           if (originalUser?.userId) {
-            await this.experienceService.addExperience({
-              userId: originalUser.userId,
-              type: ExperienceType.RECEIVED_REPLY,
-            });
+            // Проверка на благодарность
+            let isGratitude = false;
+
+            if (messageText) {
+              isGratitude = await this.detector.isGratitude(messageText);
+            }
+
+            this.addXPToDataBuffer(
+              originalUser.userId,
+              ExperienceType.RECEIVED_REPLY,
+              isGratitude ? 1 : undefined,
+            );
           }
         }
       } else {
         // Обычное сообщение (только если отправитель зарегистрирован)
         if (currentUserId) {
-          await this.experienceService.addExperience({
-            userId: currentUserId,
-            type: ExperienceType.MESSAGE,
-          });
+          this.addXPToDataBuffer(currentUserId, ExperienceType.MESSAGE);
         }
       }
 
@@ -219,12 +239,20 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
       const userId = user?.userId;
       const originalTelegramUserId = message?.telegramUserId;
 
+      // Вычисляем добавленные или удаленные реакции
+      const isAddedReaction = !!(
+        reaction.new_reaction.length > reaction.old_reaction.length
+      );
+
       // Если пользователь существует — начисляем опыт за реакцию если это чужое сообщение
       if (userId && message?.telegramUserId !== BigInt(telegramId)) {
-        await this.experienceService.addExperience({
-          userId,
-          type: ExperienceType.REACTION,
-        });
+        if (isAddedReaction) {
+          // Eсли реакция добавлена
+          this.addXPToDataBuffer(userId, ExperienceType.REACTION);
+        } else {
+          // Если реакция удалена
+          this.removeXPFromDataBuffer(userId, ExperienceType.REACTION);
+        }
       }
 
       // Если автор сообщения найден и это не сам реактор — начисляем опыт автору
@@ -238,12 +266,102 @@ export class GroupBotService implements OnModuleInit, OnModuleDestroy {
         });
 
         if (originalUser?.userId) {
-          await this.experienceService.addExperience({
-            userId: originalUser.userId,
-            type: ExperienceType.RECEIVED_REACTION,
-          });
+          if (isAddedReaction) {
+            // Eсли реакция добавлена
+            this.addXPToDataBuffer(
+              originalUser.userId,
+              ExperienceType.RECEIVED_REACTION,
+              1,
+            );
+          } else {
+            // Если реакция удалена
+            this.removeXPFromDataBuffer(
+              originalUser.userId,
+              ExperienceType.RECEIVED_REACTION,
+              1,
+            );
+          }
         }
       }
     });
+  }
+
+  private addXPToDataBuffer(
+    userId: string,
+    type: ExperienceType,
+    amount?: number,
+  ) {
+    if (!this.dataBuffer[userId]) {
+      this.dataBuffer[userId] = { xp: {}, sp: 0 };
+    }
+
+    const xpMap = this.dataBuffer[userId].xp;
+
+    // Получаем текущее количество этого типа опыта
+    const currentCount = xpMap[type] ?? 0;
+
+    // Добавляем только если количество меньше XP_TYPE_LIMIT
+    if (currentCount < XP_TYPE_LIMIT) {
+      xpMap[type] = currentCount + 1;
+    }
+
+    if (amount) {
+      this.dataBuffer[userId].sp += amount;
+    }
+  }
+
+  private removeXPFromDataBuffer(
+    userId: string,
+    type: ExperienceType,
+    amount?: number,
+  ) {
+    const buffer = this.dataBuffer[userId];
+
+    if (!buffer) return;
+
+    const xpMap = buffer.xp;
+
+    if (xpMap[type]) {
+      xpMap[type] -= 1;
+
+      // Если стало 0 — удаляем ключ
+      if (xpMap[type] === 0) {
+        delete xpMap[type];
+      }
+    }
+
+    if (amount) {
+      this.dataBuffer[userId].sp -= amount;
+    }
+
+    // Если и xp и sp пустые — удаляем всю запись
+    if (Object.keys(xpMap).length === 0 && buffer.sp === 0) {
+      delete this.dataBuffer[userId];
+    }
+  }
+
+  private async flushDataBuffer() {
+    if (Object.keys(this.dataBuffer).length === 0) return;
+
+    const bufferCopy = { ...this.dataBuffer };
+    this.dataBuffer = {};
+
+    for (const [userId, data] of Object.entries(bufferCopy)) {
+      const userExperience: UserExperienceBufferDto = {
+        userId,
+        xp: data.xp,
+      };
+
+      await this.experienceService.processUserExperienceBuffer(userExperience);
+
+      if (data.sp > 0) {
+        await this.prisma.telegramUser.update({
+          where: { userId },
+          data: {
+            forumReward: { increment: data.sp },
+          },
+        });
+      }
+    }
   }
 }

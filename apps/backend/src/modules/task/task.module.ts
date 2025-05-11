@@ -16,7 +16,7 @@ import { TaskWeeklyController } from './controllers/task-weekly.controller';
 import { WeeklyTaskResetService } from './services/task-weekly-reset-schedule.service';
 import { ExperienceService } from '../experience/experience.service';
 import { TelegramClientModule } from '../telegramClient/telegramClient.module';
-import { GroupBotModule } from 'src/telegram/GroupBot/group-bot.module';
+import { GroupBotModule } from 'src/telegram/groupBot/group-bot.module';
 
 @Module({
   imports: [PrismaModule, WalletModule, TelegramClientModule, GroupBotModule],

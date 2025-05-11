@@ -21,3 +21,5 @@ export const experiencePoints = {
   RECEIVED_REACTION: 2,
   RECEIVED_REPLY: 10,
 };
+
+export const FORUM_REWARD_COLLECT_INTERVAL_MS = 60000;

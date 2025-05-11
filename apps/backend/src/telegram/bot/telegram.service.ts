@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Bot, Context } from 'grammy';
 import { TelegramUserService } from 'src/modules/telegramUser/telegramUser.service';
 import { TranslationService } from './translation.service';
-import { LANGUAGE_CHANGE_COMMAND_ARRAY } from './consts';
+import { LANGUAGE_CHANGE_COMMAND_ARRAY } from './constants';
 import { TgUserLanguageService } from '../common/tg-user-language.service';
 import { run } from '@grammyjs/runner';
 

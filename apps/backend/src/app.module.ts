@@ -69,7 +69,7 @@ import { TaskProgressService } from './modules/task/services/task-progress.servi
 import { TaskWeeklyController } from './modules/task/controllers/task-weekly.controller';
 import { TaskWeeklyService } from './modules/task/services/task-weekly.service';
 import { TelegramModule } from './telegram/bot/telegram.module';
-import { GroupBotModule } from './telegram/GroupBot/group-bot.module';
+import { GroupBotModule } from './telegram/groupBot/group-bot.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TelegramClientModule } from './modules/telegramClient/telegramClient.module';
 
