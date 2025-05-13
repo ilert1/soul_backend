@@ -12,6 +12,7 @@ import { AppLoggerService } from 'src/modules/logger/logger.service';
 
 @WebSocketGateway({
   namespace: '/ws',
+  path: '/ws/',
   cors: {
     origin: '*',
   },
