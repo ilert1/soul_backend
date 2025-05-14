@@ -20,7 +20,7 @@ const start = () => {
 
   app.use(adminJs.options.rootPath, router);
 
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT_ADMIN || 3001;
   app.listen(port, () => {
     console.log(
       `✅ AdminJS запущен на http://localhost:${port}${adminJs.options.rootPath}`,

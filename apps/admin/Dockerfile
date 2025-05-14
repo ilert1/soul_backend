@@ -10,7 +10,6 @@ RUN  npm ci --only=production
 
 COPY node_modules/.prisma/client ./node_modules/.prisma/client
 COPY dist/ ./dist/
-COPY .env ./
 COPY tsconfig.json ./
 
 

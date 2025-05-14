@@ -43,6 +43,9 @@ deploy-results.json
 .env.test.local
 .env.production.local
 .env.local
+.env.admin
+.env.backend
+.env.db
 
 # temp directory
 .temp
