@@ -32,7 +32,7 @@ async function bootstrap() {
   );
   SwaggerModule.setup('docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT_BACKEND ?? 3000);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

@@ -13,7 +13,6 @@ COPY node_modules/.prisma ./node_modules/.prisma
 COPY nest-cli.json ./
 COPY dist/ ./dist/
 COPY assets/ ./assets/
-COPY .env ./
 COPY tsconfig.json ./
 
 CMD ["sh", "-c", "set -e; node dist/main.js"]

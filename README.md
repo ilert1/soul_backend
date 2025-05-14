@@ -14,8 +14,8 @@
 Требуется docker на вашей локальной машине.
 
 ```bash
-#Команда из всего docker-compose запускает только базу данных
-docker compose -f docker-compose.deploy.yml up -d db
+#Используется изолированный файл для локальной разработки
+docker compose -f 'docker-compose.dev-db.yml' up -d --build 'db'
 ```
 
 ## 2. Установите зависимости (отдельные для backend и admin)
