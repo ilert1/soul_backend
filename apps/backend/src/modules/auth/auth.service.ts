@@ -8,7 +8,13 @@ import {
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, TaskList, TransactionType, User } from '@prisma/client';
+import {
+  Prisma,
+  TaskList,
+  TransactionType,
+  User,
+  UserRanks,
+} from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { getObjectFromHash } from 'src/common/utils/hash.utils';
@@ -140,19 +146,23 @@ export class AuthService {
         user.id,
       );
 
+      // при налиичии приглашения
       if (invitation && invitation.inviterId) {
-        if (
-          !invitation.eventId &&
-          (await this.checkIsInviteUnavailable(invitation.inviterId))
-        ) {
-          throw new BadRequestException('Приглашение недоступно');
-        }
-
-        action = { actionType: ActionType.redirectToMain };
         const inviterId: string = invitation.inviterId;
+        const inviter = await this.prisma.user.findUniqueOrThrow({
+          where: { id: inviterId },
+        });
 
-        // Уменьшение количества доступных приглашений у inviter
-        await this.userService.decreaseAvailableInvites(inviterId);
+        if (inviter.rank !== UserRanks.ambassador) {
+          if (!invitation.eventId && this.checkIsInviteUnavailable(inviter)) {
+            throw new BadRequestException('Приглашение недоступно');
+          }
+
+          action = { actionType: ActionType.redirectToMain };
+
+          // Уменьшение количества доступных приглашений у inviter
+          await this.userService.decreaseAvailableInvites(inviter.id);
+        }
 
         // Создаем запись о приглашении
         await this.inviteService.createInvite(inviterId, user.id);
@@ -171,6 +181,7 @@ export class AuthService {
       }
     }
 
+    // сообщаем фронту о редиректе на event, если было приглашение на него
     if (invitation && invitation.eventId) {
       action = {
         actionType: ActionType.redirectToEvent,
@@ -361,11 +372,7 @@ export class AuthService {
   //   return invitation.inviterId;
   // }
 
-  private async checkIsInviteUnavailable(inviterId: string): Promise<boolean> {
-    const inviter = await this.prisma.user.findUnique({
-      where: { id: inviterId },
-    });
-
+  private checkIsInviteUnavailable(inviter: User): boolean {
     return !inviter || (inviter && inviter.availableInvites === 0);
   }
 
