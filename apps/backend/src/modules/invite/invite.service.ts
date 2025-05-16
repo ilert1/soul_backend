@@ -24,7 +24,7 @@ import {
 } from './invite.constant';
 import { AppLoggerService } from '../logger/logger.service';
 import { TransactionCreateService } from '../transaction/transaction-create.service';
-import { Prisma, TransactionType } from '@prisma/client';
+import { Prisma, TransactionType, UserRanks } from '@prisma/client';
 
 @Injectable()
 export class InviteService {
@@ -82,6 +82,7 @@ export class InviteService {
       select: {
         totalInvites: true,
         availableInvites: true,
+        rank: true,
         wallet: { select: { id: true, balance: true } },
       },
     });
@@ -89,6 +90,12 @@ export class InviteService {
     if (user.totalInvites >= MAX_INVITES_COUNT) {
       throw new BadRequestException(
         'Максимальное число приглашений уже приобретено',
+      );
+    }
+
+    if (user.rank === UserRanks.ambassador) {
+      throw new BadRequestException(
+        'У пользователя с рангом "Амбассадор" безлимитное количество приглашений. Покупка новых недоступна',
       );
     }
 

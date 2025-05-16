@@ -63,7 +63,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .husky/_/
 
 pg_data
-
+pg_dev_data
 
 apps/backend/src/telegram/groupBot/gratitude/model.nlp
 apps/backend/model.nlp
