@@ -53,6 +53,15 @@ export class LeaderboardDto {
     nullable: true,
   })
   wallet?: { balance: number } | null;
+
+  @ApiProperty({
+    example: {
+      code: 'RU',
+    },
+    description: 'Код страны пользователя',
+    nullable: true,
+  })
+  country?: { code: string } | null;
 }
 
 export class LeaderboardPositionDto {

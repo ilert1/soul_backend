@@ -343,6 +343,11 @@ export class UserService {
               balance: true,
             },
           },
+          country: {
+            select: {
+              code: true,
+            },
+          },
         },
         orderBy: [
           {
@@ -378,6 +383,11 @@ export class UserService {
           select: {
             mimeType: true,
             id: true,
+          },
+        },
+        country: {
+          select: {
+            code: true,
           },
         },
       },
