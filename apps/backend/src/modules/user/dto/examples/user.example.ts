@@ -66,6 +66,9 @@ export const LeaderbeardXPExample = [
       id: '2feb9e33-a078-408b-8151-34b915d3b26d',
       mimeType: 'image/svg+xml',
     },
+    country: {
+      code: 'RU',
+    },
     experience: 600,
   },
   {
@@ -74,6 +77,9 @@ export const LeaderbeardXPExample = [
     avatarImage: {
       id: '37bf5a46-e158-4e92-b9e3-4e547109f749',
       mimeType: 'image/svg+xml',
+    },
+    country: {
+      code: 'RU',
     },
     experience: 400,
   },
@@ -87,6 +93,9 @@ export const LeaderbeardSPExample = [
       id: '2feb9e33-a078-408b-8151-34b915d3b26d',
       mimeType: 'image/svg+xml',
     },
+    country: {
+      code: 'RU',
+    },
     waller: { balance: 1020 },
   },
   {
@@ -95,6 +104,9 @@ export const LeaderbeardSPExample = [
     avatarImage: {
       id: '37bf5a46-e158-4e92-b9e3-4e547109f749',
       mimeType: 'image/svg+xml',
+    },
+    country: {
+      code: 'RU',
     },
     waller: { balance: 1020 },
   },
